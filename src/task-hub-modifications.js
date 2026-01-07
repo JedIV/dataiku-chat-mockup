@@ -89,25 +89,32 @@
   }
 
   // ============================================
-  // 1. Apply Gradient Background
+  // Main Styling Function (can be re-applied)
   // ============================================
-  applyStyles(document.body, {
-    background: CONFIG.colors.background.gradient,
-    backgroundAttachment: 'fixed'
-  });
+  function applyLovableStyles() {
+    // Remove any previously added custom elements
+    document.querySelectorAll('.lovable-search-wrapper, .lovable-cards-container, .custom-subtitle, .new-search-btn').forEach(el => el.remove());
 
-  applyStyles($('#root-dom-element'), {
-    background: CONFIG.colors.background.gradient,
-    backgroundAttachment: 'fixed'
-  });
+    // ============================================
+    // 1. Apply Gradient Background
+    // ============================================
+    applyStyles(document.body, {
+      background: CONFIG.colors.background.gradient,
+      backgroundAttachment: 'fixed'
+    });
 
-  makeTransparent([
-    '.main-screen-section',
-    '.banner-section',
-    '.data-catalog-semantic-search__main-section',
-    '.data-catalog-semantic-search-page__container',
-    '.data-catalog-semantic-search__content'
-  ]);
+    applyStyles($('#root-dom-element'), {
+      background: CONFIG.colors.background.gradient,
+      backgroundAttachment: 'fixed'
+    });
+
+    makeTransparent([
+      '.main-screen-section',
+      '.banner-section',
+      '.data-catalog-semantic-search__main-section',
+      '.data-catalog-semantic-search-page__container',
+      '.data-catalog-semantic-search__content'
+    ]);
 
   // ============================================
   // 2. Hide Unnecessary Elements
@@ -283,6 +290,7 @@
            document.querySelectorAll('[class*="dataset"], [class*="result-item"]').length > 0;
   }
 
+  // Method 1: Add button next to search wrapper (when textarea is visible)
   const searchWrapper = $('.lovable-search-wrapper');
   if (searchWrapper && hasSearchResults() && !$('.new-search-btn')) {
     const newSearchBtn = document.createElement('button');
@@ -306,7 +314,13 @@
     newSearchBtn.onmouseleave = () => newSearchBtn.style.background = CONFIG.colors.text.accent;
 
     newSearchBtn.onclick = () => {
-      window.location.href = window.location.pathname;
+      const originalBtn = document.querySelector('.chat-input__new-search');
+      if (originalBtn) {
+        originalBtn.click();
+        setTimeout(() => window.dispatchEvent(new CustomEvent('applyLovableStyles')), 150);
+      } else {
+        window.location.href = window.location.pathname;
+      }
     };
 
     const flexContainer = document.createElement('div');
@@ -325,6 +339,45 @@
 
     searchWrapper.style.flex = '1';
     searchWrapper.style.maxWidth = '600px';
+  }
+
+  // Method 2: Replace original button when results are showing (no textarea visible)
+  if (hasSearchResults() && !$('.new-search-btn')) {
+    const originalBtn = $('.chat-input__new-search');
+    const actionsContainer = $('.chat-input__actions');
+
+    if (originalBtn && actionsContainer) {
+      // Hide the original button
+      originalBtn.style.display = 'none';
+
+      // Create our styled button
+      const newSearchBtn = document.createElement('button');
+      newSearchBtn.className = 'new-search-btn';
+      newSearchBtn.textContent = 'New Search';
+      applyStyles(newSearchBtn, {
+        padding: '10px 20px',
+        background: CONFIG.colors.text.accent,
+        color: 'white',
+        border: 'none',
+        borderRadius: '8px',
+        fontSize: '14px',
+        fontWeight: '500',
+        cursor: 'pointer',
+        whiteSpace: 'nowrap',
+        transition: 'background 0.2s',
+        marginRight: '8px'
+      });
+
+      newSearchBtn.onmouseenter = () => newSearchBtn.style.background = '#009488';
+      newSearchBtn.onmouseleave = () => newSearchBtn.style.background = CONFIG.colors.text.accent;
+
+      newSearchBtn.onclick = () => {
+        originalBtn.click();
+        setTimeout(() => window.dispatchEvent(new CustomEvent('applyLovableStyles')), 150);
+      };
+
+      actionsContainer.insertBefore(newSearchBtn, actionsContainer.firstChild);
+    }
   }
 
   // ============================================
@@ -387,5 +440,21 @@
     }
   }
 
-  console.log('Lovable-style modifications applied successfully!');
+    console.log('Lovable-style modifications applied successfully!');
+  } // End of applyLovableStyles function
+
+  // ============================================
+  // Initialize and set up event listener for re-application
+  // ============================================
+
+  // Apply styles initially
+  applyLovableStyles();
+
+  // Listen for custom event to re-apply styles (used by New Search button)
+  window.addEventListener('applyLovableStyles', () => {
+    applyLovableStyles();
+  });
+
+  // Expose function globally for debugging
+  window.applyLovableStyles = applyLovableStyles;
 })();
