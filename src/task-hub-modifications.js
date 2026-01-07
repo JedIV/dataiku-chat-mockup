@@ -93,7 +93,7 @@
   // ============================================
   function applyLovableStyles() {
     // Remove any previously added custom elements
-    document.querySelectorAll('.lovable-search-wrapper, .lovable-cards-container, .custom-subtitle, .new-search-btn').forEach(el => el.remove());
+    document.querySelectorAll('.lovable-search-wrapper, .lovable-cards-container, .custom-subtitle').forEach(el => el.remove());
 
     // ============================================
     // 1. Apply Gradient Background
@@ -282,98 +282,9 @@
   }
 
   // ============================================
-  // 7. Add "New Search" Button (only after search)
+  // 7. Hide original "New Search" button (users can refresh page manually)
   // ============================================
-  function hasSearchResults() {
-    return document.body.textContent.includes('Searching for:') ||
-           document.body.textContent.includes('Coverage of') ||
-           document.querySelectorAll('[class*="dataset"], [class*="result-item"]').length > 0;
-  }
-
-  // Method 1: Add button next to search wrapper (when textarea is visible)
-  const searchWrapper = $('.lovable-search-wrapper');
-  if (searchWrapper && hasSearchResults() && !$('.new-search-btn')) {
-    const newSearchBtn = document.createElement('button');
-    newSearchBtn.className = 'new-search-btn';
-    newSearchBtn.textContent = 'New Search';
-    applyStyles(newSearchBtn, {
-      marginLeft: '12px',
-      padding: '10px 20px',
-      background: CONFIG.colors.text.accent,
-      color: 'white',
-      border: 'none',
-      borderRadius: '8px',
-      fontSize: '14px',
-      fontWeight: '500',
-      cursor: 'pointer',
-      whiteSpace: 'nowrap',
-      transition: 'background 0.2s'
-    });
-
-    newSearchBtn.onmouseenter = () => newSearchBtn.style.background = '#009488';
-    newSearchBtn.onmouseleave = () => newSearchBtn.style.background = CONFIG.colors.text.accent;
-
-    newSearchBtn.onclick = () => {
-      // Reload the page to get fresh state with textarea
-      window.location.reload();
-    };
-
-    const flexContainer = document.createElement('div');
-    applyStyles(flexContainer, {
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      width: '100%',
-      maxWidth: '750px',
-      margin: '0 auto'
-    });
-
-    searchWrapper.parentElement.insertBefore(flexContainer, searchWrapper);
-    flexContainer.appendChild(searchWrapper);
-    flexContainer.appendChild(newSearchBtn);
-
-    searchWrapper.style.flex = '1';
-    searchWrapper.style.maxWidth = '600px';
-  }
-
-  // Method 2: Replace original button when results are showing (no textarea visible)
-  if (hasSearchResults() && !$('.new-search-btn')) {
-    const originalBtn = $('.chat-input__new-search');
-    const actionsContainer = $('.chat-input__actions');
-
-    if (originalBtn && actionsContainer) {
-      // Hide the original button
-      originalBtn.style.display = 'none';
-
-      // Create our styled button
-      const newSearchBtn = document.createElement('button');
-      newSearchBtn.className = 'new-search-btn';
-      newSearchBtn.textContent = 'New Search';
-      applyStyles(newSearchBtn, {
-        padding: '10px 20px',
-        background: CONFIG.colors.text.accent,
-        color: 'white',
-        border: 'none',
-        borderRadius: '8px',
-        fontSize: '14px',
-        fontWeight: '500',
-        cursor: 'pointer',
-        whiteSpace: 'nowrap',
-        transition: 'background 0.2s',
-        marginRight: '8px'
-      });
-
-      newSearchBtn.onmouseenter = () => newSearchBtn.style.background = '#009488';
-      newSearchBtn.onmouseleave = () => newSearchBtn.style.background = CONFIG.colors.text.accent;
-
-      newSearchBtn.onclick = () => {
-        // Reload the page to get fresh state with textarea
-        window.location.reload();
-      };
-
-      actionsContainer.insertBefore(newSearchBtn, actionsContainer.firstChild);
-    }
-  }
+  $$('.chat-input__new-search').forEach(btn => btn.style.display = 'none');
 
   // ============================================
   // 8. Create Feature Cards
