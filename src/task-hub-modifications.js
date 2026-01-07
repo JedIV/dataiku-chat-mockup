@@ -278,9 +278,9 @@
   // 7. Add "New Search" Button (only after search)
   // ============================================
   function hasSearchResults() {
-    return !!$('[class*="search-result"], [class*="answer"], .chat-message, [class*="response"]') ||
-           window.location.search.includes('q=') ||
-           !!$('[class*="searching"]');
+    return document.body.textContent.includes('Searching for:') ||
+           document.body.textContent.includes('Coverage of') ||
+           document.querySelectorAll('[class*="dataset"], [class*="result-item"]').length > 0;
   }
 
   const searchWrapper = $('.lovable-search-wrapper');
