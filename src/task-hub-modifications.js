@@ -262,7 +262,7 @@
       lineHeight: '44px',
       overflow: 'hidden'
     });
-    searchInput.placeholder = 'Search for anything...';
+    searchInput.placeholder = 'What do you want to do?';
     searchInput.rows = 1;
   }
 
