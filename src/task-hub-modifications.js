@@ -260,7 +260,7 @@
   }
 
   // ============================================
-  // 6. Fix Content Layout
+  // 6. Fix Content Layout (left-align for search results)
   // ============================================
   const mainContent = $('.data-catalog-semantic-search__content, .main-screen-section');
   if (mainContent) {
@@ -269,13 +269,66 @@
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
-      textAlign: 'center',
+      textAlign: 'left',
       padding: '0'
     });
   }
 
   // ============================================
-  // 7. Create Feature Cards
+  // 7. Add "New Search" Button (only after search)
+  // ============================================
+  function hasSearchResults() {
+    return !!$('[class*="search-result"], [class*="answer"], .chat-message, [class*="response"]') ||
+           window.location.search.includes('q=') ||
+           !!$('[class*="searching"]');
+  }
+
+  const searchWrapper = $('.lovable-search-wrapper');
+  if (searchWrapper && hasSearchResults() && !$('.new-search-btn')) {
+    const newSearchBtn = document.createElement('button');
+    newSearchBtn.className = 'new-search-btn';
+    newSearchBtn.textContent = 'New Search';
+    applyStyles(newSearchBtn, {
+      marginLeft: '12px',
+      padding: '10px 20px',
+      background: CONFIG.colors.text.accent,
+      color: 'white',
+      border: 'none',
+      borderRadius: '8px',
+      fontSize: '14px',
+      fontWeight: '500',
+      cursor: 'pointer',
+      whiteSpace: 'nowrap',
+      transition: 'background 0.2s'
+    });
+
+    newSearchBtn.onmouseenter = () => newSearchBtn.style.background = '#009488';
+    newSearchBtn.onmouseleave = () => newSearchBtn.style.background = CONFIG.colors.text.accent;
+
+    newSearchBtn.onclick = () => {
+      window.location.href = window.location.pathname;
+    };
+
+    const flexContainer = document.createElement('div');
+    applyStyles(flexContainer, {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      width: '100%',
+      maxWidth: '750px',
+      margin: '0 auto'
+    });
+
+    searchWrapper.parentElement.insertBefore(flexContainer, searchWrapper);
+    flexContainer.appendChild(searchWrapper);
+    flexContainer.appendChild(newSearchBtn);
+
+    searchWrapper.style.flex = '1';
+    searchWrapper.style.maxWidth = '600px';
+  }
+
+  // ============================================
+  // 8. Create Feature Cards
   // ============================================
   if (!$('.lovable-cards-container')) {
     const container = document.createElement('div');
