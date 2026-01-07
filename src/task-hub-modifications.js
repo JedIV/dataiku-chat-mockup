@@ -314,13 +314,8 @@
     newSearchBtn.onmouseleave = () => newSearchBtn.style.background = CONFIG.colors.text.accent;
 
     newSearchBtn.onclick = () => {
-      const originalBtn = document.querySelector('.chat-input__new-search');
-      if (originalBtn) {
-        originalBtn.click();
-        setTimeout(() => window.dispatchEvent(new CustomEvent('applyLovableStyles')), 150);
-      } else {
-        window.location.href = window.location.pathname;
-      }
+      // Reload the page to get fresh state with textarea
+      window.location.reload();
     };
 
     const flexContainer = document.createElement('div');
@@ -372,8 +367,8 @@
       newSearchBtn.onmouseleave = () => newSearchBtn.style.background = CONFIG.colors.text.accent;
 
       newSearchBtn.onclick = () => {
-        originalBtn.click();
-        setTimeout(() => window.dispatchEvent(new CustomEvent('applyLovableStyles')), 150);
+        // Reload the page to get fresh state with textarea
+        window.location.reload();
       };
 
       actionsContainer.insertBefore(newSearchBtn, actionsContainer.firstChild);
@@ -453,6 +448,20 @@
   // Listen for custom event to re-apply styles (used by New Search button)
   window.addEventListener('applyLovableStyles', () => {
     applyLovableStyles();
+  });
+
+  // Watch for textarea to appear and style it (for SPA lazy loading)
+  const observer = new MutationObserver((mutations) => {
+    const textarea = $('textarea');
+    if (textarea && !$('.lovable-search-wrapper')) {
+      // Textarea appeared but not yet styled - apply styles
+      applyLovableStyles();
+    }
+  });
+
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true
   });
 
   // Expose function globally for debugging
