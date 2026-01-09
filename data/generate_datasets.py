@@ -3,7 +3,7 @@ Generate fake clinical trial datasets for the Agentic Data Prep Demo.
 
 Datasets:
 1. patient_demographics (~12,400 records)
-2. lab_results_2024 (~45,000 records)
+2. lab_results_2025 (~45,000 records)
 3. clinical_notes_raw (~28,000 records) - can use Claude API for realistic generation
 
 Usage:
@@ -49,7 +49,7 @@ def generate_patient_demographics(num_patients):
 
     records = []
     for i in range(num_patients):
-        patient_id = f"PT-2024-{i:05d}"
+        patient_id = f"PT-2025-{i:05d}"
 
         # Age distribution: median ~58, range 18-95, concentrated 45-72
         age = int(random.gauss(58, 12))
@@ -92,7 +92,7 @@ def generate_patient_demographics(num_patients):
 
 
 # ============================================
-# Dataset 2: lab_results_2024
+# Dataset 2: lab_results_2025
 # ============================================
 def generate_lab_results(num_results, patient_ids):
     """Generate lab results dataset with realistic medical test data.
@@ -500,7 +500,7 @@ def generate_clinical_notes_template(num_notes, patient_ids):
         # Hypertension notes
         "Pt presents w/ hx of hypertension, prev tx w/ {med1} discontinued d/t {side_effect}. Currently on {med2}. No known {typo_allergies}. {trial_history}",
         "{age} yo {gender} w/ HTN, well controlled on current regimen. BP {bp} today. Continue {med1}. {typo_follow} in 3 months.",
-        "Hypertensive urgency - BP {bp_high}. Pt reports medication non-adherance. Restarted {med1}, added {med2}. {typo_eligible} for HYPER-2024 study.",
+        "Hypertensive urgency - BP {bp_high}. Pt reports medication non-adherance. Restarted {med1}, added {med2}. {typo_eligible} for HYPER-2025 study.",
 
         # Diabetes notes
         "{age} yo {gender} w/ Type 2 DM, on {dm_med} {dm_dose} BID. Contraindications: {contraindication}. Prior treatments incl {prior_med} (d/c for {dc_reason}).",
@@ -593,7 +593,7 @@ def generate_clinical_notes_template(num_notes, patient_ids):
             chemo_regimen=random.choice(chemo_regimens),
             cancer_type=random.choice(cancer_types),
             stage=random.choice(["IIA", "IIB", "IIIA", "IIIB", "IV"]),
-            trial_name=random.choice(["KEYNOTE-999", "ONCOLOGY-2024", "BEACON-3", "IMMUNOBOOST"]),
+            trial_name=random.choice(["KEYNOTE-999", "ONCOLOGY-2025", "BEACON-3", "IMMUNOBOOST"]),
             decision=random.choice(["agrees to enrollment", "declines - wants more time", "will discuss with family"]),
             year=random.randint(2015, 2022),
             ef=random.randint(25, 55),
@@ -612,7 +612,7 @@ def generate_clinical_notes_template(num_notes, patient_ids):
             plan=random.choice(["continue current management", "start new medication", "order additional testing", "refer to specialist"]),
             trial_history=random.choice(trial_histories),
             trial_history2=random.choice(trial_histories),
-            trial_mention=random.choice(["", "Discussed DIABETES-2024 trial.", "May be candidate for research study."]),
+            trial_mention=random.choice(["", "Discussed DIABETES-2025 trial.", "May be candidate for research study."]),
             **{k: random.choice(v) for k, v in typos.items()}
         )
 
@@ -659,10 +659,10 @@ def main():
     print(f"   Contraindication counts: {patient_df['contraindication_count'].value_counts().sort_index().to_dict()}")
 
     # Generate lab results
-    print(f"\n2. Generating lab_results_2024 ({args.num_lab_results:,} records)...")
+    print(f"\n2. Generating lab_results_2025 ({args.num_lab_results:,} records)...")
     lab_df = generate_lab_results(args.num_lab_results, patient_ids)
-    lab_df.to_csv("lab_results_2024.csv", index=False)
-    print(f"   Saved: lab_results_2024.csv")
+    lab_df.to_csv("lab_results_2025.csv", index=False)
+    print(f"   Saved: lab_results_2025.csv")
     print(f"   Flag distribution: {lab_df['flag'].value_counts().to_dict()}")
     # Show the planted obvious errors
     obvious = lab_df[lab_df['result_value'].isin([150.0, 140.0, 9500.0])]
@@ -699,7 +699,7 @@ def main():
     print("\n✓ All datasets generated successfully!")
     print(f"\nSummary:")
     print(f"  - patient_demographics.csv: {len(patient_df):,} records")
-    print(f"  - lab_results_2024.csv: {len(lab_df):,} records")
+    print(f"  - lab_results_2025.csv: {len(lab_df):,} records")
     print(f"  - clinical_notes_raw.csv: {len(notes_df):,} records")
 
 
