@@ -84,7 +84,7 @@ def generate_patient_demographics(num_patients):
             "contact_status": random.choices(contact_statuses, weights=contact_weights)[0],
             "enrollment_history": enrollment_history,
             "contraindication_count": contraindication_count,
-            "last_visit_date": fake.date_between(start_date="-2y", end_date="today").isoformat(),
+            "last_visit_date": fake.date_between(start_date="2025-01-01", end_date="2025-12-31").isoformat(),
             "enrollment_success": enrollment_success
         })
 
@@ -152,7 +152,7 @@ def generate_lab_results(num_results, patient_ids):
     for error in obvious_errors:
         records.append({
             "patient_id": random.choice(patient_ids),
-            "test_date": fake.date_between(start_date="-1y", end_date="today").isoformat(),
+            "test_date": fake.date_between(start_date="2025-01-01", end_date="2025-12-31").isoformat(),
             **error
         })
 
@@ -183,7 +183,7 @@ def generate_lab_results(num_results, patient_ids):
 
         records.append({
             "patient_id": patient_id,
-            "test_date": fake.date_between(start_date="-1y", end_date="today").isoformat(),
+            "test_date": fake.date_between(start_date="2025-01-01", end_date="2025-12-31").isoformat(),
             "test_type": test_type,
             "test_name": test_name,
             "result_value": result_value,
@@ -324,7 +324,7 @@ def expand_notes_with_variations(base_notes_df, target_count, patient_ids):
 
             records.append({
                 "patient_id": random.choice(patient_ids),
-                "note_date": fake.date_between(start_date="-1y", end_date="today").isoformat(),
+                "note_date": fake.date_between(start_date="2025-01-01", end_date="2025-12-31").isoformat(),
                 "provider_id": random.choice(provider_ids),
                 "note_type": base_note["note_type"],
                 "note_text": note_text
@@ -392,7 +392,7 @@ Generate notes that look like they were quickly typed by busy physicians."""
         for _ in range(current_batch_size):
             patient = patient_df.sample(1).iloc[0]
             note_type = random.choice(note_types)
-            note_date = fake.date_between(start_date="-1y", end_date="today").isoformat()
+            note_date = fake.date_between(start_date="2025-01-01", end_date="2025-12-31").isoformat()
             provider_id = random.choice(provider_ids)
 
             context = {
@@ -618,7 +618,7 @@ def generate_clinical_notes_template(num_notes, patient_ids):
 
         records.append({
             "patient_id": patient_id,
-            "note_date": fake.date_between(start_date="-1y", end_date="today").isoformat(),
+            "note_date": fake.date_between(start_date="2025-01-01", end_date="2025-12-31").isoformat(),
             "provider_id": random.choice(provider_ids),
             "note_type": random.choice(note_types),
             "note_text": note_text
