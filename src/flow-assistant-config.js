@@ -1,77 +1,261 @@
 /**
  * Flow Assistant Fake Chat - Configuration
  *
- * Edit this file to customize your fake conversation.
+ * Clinical Trial Enrollment Agent Demo
+ * Based on: Agentic Data Prep Demo - Scoping and Planning
+ *
  * Paste this into the browser console BEFORE the main script.
- *
- * Message format:
- *   User:      { role: 'user', text: 'Your message here' }
- *   Assistant: { role: 'assistant', content: { intro, tasks, footer } }
- *
- * Task format:
- *   { title, inputs: [], outputs: [], description }
- *
- * Use <span style="color:#28a9dd">text</span> to highlight dataset/column names
- * Use <em>text</em> for italics
  */
 
 window.fakeChatConfig = {
   conversation: [
+    // Opening request
     {
       role: 'user',
-      text: 'Give me summary statistics about the energy consumption data'
+      text: 'I need to build a dataset for a trial enrollment agent. It should combine patient info with lab results and clinical notes so coordinators can find eligible candidates.'
     },
     {
       role: 'assistant',
       content: {
-        intro: 'We first need to convert the consumption column from string to a numeric type so that we can compute numeric aggregations on it. Then we use a grouping recipe with no grouping keys (global aggregation) to compute the count of rows along with sum, average, minimum, maximum, and standard deviation of <em>consomation</em>.',
+        intro: 'I found a <em>patient_demographics</em> dataset in the Clinical Operations project that looks like a good starting point. It has <strong>12,400 records</strong> with patient ID, age, location, and contact info.',
         tasks: [
           {
-            title: 'Prepare Data',
-            inputs: ['data'],
-            outputs: ['data_prepared'],
-            description: 'Create a prepare recipe to convert column <span style="color:#28a9dd">consomation</span> to numeric type using the auto type parser'
-          },
-          {
-            title: 'Grouping Data',
-            inputs: ['data_prepared'],
-            outputs: ['energy_consumption_summary'],
-            description: 'Create a grouping recipe to compute global summary statistics (count, sum, average, min, max, stddev) on column <span style="color:#28a9dd">consomation</span>'
+            title: 'Patient Demographics',
+            inputs: [],
+            outputs: ['patient_demographics'],
+            description: 'Source dataset with 12,400 patient records including <span style="color:#28a9dd">patient_id</span>, <span style="color:#28a9dd">age</span>, <span style="color:#28a9dd">location</span>, and contact information'
           }
         ],
-        footer: 'If you\'re happy with the plan, click Create Flow. Otherwise, describe the changes you\'d like.'
+        footer: 'Want to start with this one? I can show you a preview.'
       }
     },
+
+    // Age distribution
     {
       role: 'user',
-      text: 'Can you also analyze patterns by time of day?'
+      text: 'Yes, show me a preview. What does the age distribution look like?'
     },
     {
       role: 'assistant',
       content: {
-        intro: 'I\'ll add a step to extract the hour from your timestamp and then group by hour to analyze consumption patterns throughout the day.',
+        intro: 'Here\'s what I found: the median age is <strong>58 years</strong>. About 70% of patients fall between 45 and 72, which aligns well with typical Phase III oncology trial criteria. This looks like a solid foundation for your enrollment dataset.',
+        tasks: [],
+        footer: 'Would you like me to find related datasets with lab results and clinical notes?'
+      }
+    },
+
+    // Finding additional datasets
+    {
+      role: 'user',
+      text: 'Yes, I need to bring in lab results and clinical notes for these patients.'
+    },
+    {
+      role: 'assistant',
+      content: {
+        intro: 'I found three related datasets that can be joined on <span style="color:#28a9dd">patient_id</span>:',
         tasks: [
           {
-            title: 'Prepare Data',
-            inputs: ['data'],
-            outputs: ['data_with_hour'],
-            description: 'Extract hour from <span style="color:#28a9dd">DATE_LOCAL</span> column'
+            title: 'Lab Results',
+            inputs: [],
+            outputs: ['lab_results'],
+            description: '<strong>45,000 records</strong> with blood panels, biomarkers, and test dates'
           },
           {
-            title: 'Group by Hour',
-            inputs: ['data_with_hour'],
-            outputs: ['hourly_patterns'],
-            description: 'Compute average consumption grouped by hour of day'
+            title: 'Clinical Notes',
+            inputs: [],
+            outputs: ['clinical_notes'],
+            description: '<strong>28,000 records</strong> with free-text physician notes and visit summaries'
+          },
+          {
+            title: 'Prior Trial Participation',
+            inputs: [],
+            outputs: ['trial_history'],
+            description: '<strong>8,500 records</strong> tracking previous enrollment history and outcomes'
           }
         ],
-        footer: 'This will show you which hours have the highest and lowest energy consumption.'
+        footer: 'Which ones would you like to include?'
+      }
+    },
+
+    // Selecting datasets and joining
+    {
+      role: 'user',
+      text: 'Let\'s use the lab results and clinical notes. Join them to the patient dataset on patient_id.'
+    },
+    {
+      role: 'assistant',
+      content: {
+        intro: 'I\'ll create a join recipe to combine all three datasets on <span style="color:#28a9dd">patient_id</span>.',
+        tasks: [
+          {
+            title: 'Join Datasets',
+            inputs: ['patient_demographics', 'lab_results', 'clinical_notes'],
+            outputs: ['patient_data_joined'],
+            description: 'Left join on <span style="color:#28a9dd">patient_id</span> to combine demographics with lab results and clinical notes'
+          }
+        ],
+        footer: 'Ready to create this flow?'
+      }
+    },
+
+    // Confirm join results
+    {
+      role: 'user',
+      text: 'Yes, create it.'
+    },
+    {
+      role: 'assistant',
+      content: {
+        intro: 'Done! The join completed with <strong>11,200 matched records</strong>. I\'ve added the recipe to your flow.',
+        tasks: [],
+        footer: 'I noticed the clinical_notes column contains unstructured text. Would you like me to extract structured fields from it?'
+      }
+    },
+
+    // LLM extraction from clinical notes
+    {
+      role: 'user',
+      text: 'Yes, the clinical notes are messy. Can you extract prior treatments and any contraindications from the text?'
+    },
+    {
+      role: 'assistant',
+      content: {
+        intro: 'I\'ll create a prepare recipe with an LLM step to extract structured data from the notes. The LLM will handle spelling variations, abbreviations, and different documentation styles.',
+        tasks: [
+          {
+            title: 'Extract Clinical Entities',
+            inputs: ['patient_data_joined'],
+            outputs: ['patient_data_enriched'],
+            description: 'Use LLM to extract <span style="color:#28a9dd">prior_treatments</span> and <span style="color:#28a9dd">contraindications</span> from the free-text <span style="color:#28a9dd">clinical_notes</span> column'
+          }
+        ],
+        footer: 'Want me to run this on a sample first so you can review the extractions?'
+      }
+    },
+
+    // Run sample
+    {
+      role: 'user',
+      text: 'Yes, run it on a sample.'
+    },
+    {
+      role: 'assistant',
+      content: {
+        intro: 'Sample extraction complete. The LLM successfully identified treatments and contraindications in <strong>94%</strong> of the records. Before we continue, I\'d recommend reviewing the data quality—I noticed some missing values in the lab results.',
+        tasks: [],
+        footer: 'Want me to open the statistics view so you can review?'
+      }
+    },
+
+    // After data quality review, build model
+    {
+      role: 'user',
+      text: 'I reviewed the data and fixed a few outliers. Now I want to predict which patients are most likely to enroll and complete the trial.'
+    },
+    {
+      role: 'assistant',
+      content: {
+        intro: 'I can build a predictive model for that. I\'ll use <span style="color:#28a9dd">enrollment_success</span> as the target and train on age, location, prior trial history, and the clinical factors we just extracted.',
+        tasks: [
+          {
+            title: 'AutoML Training',
+            inputs: ['patient_data_enriched'],
+            outputs: ['enrollment_model'],
+            description: 'Train classification model to predict enrollment likelihood using patient demographics, lab results, and extracted clinical factors'
+          }
+        ],
+        footer: 'Want me to run AutoML? It\'ll evaluate multiple algorithms and select the best performer.'
+      }
+    },
+
+    // AutoML results
+    {
+      role: 'user',
+      text: 'Yes, run AutoML.'
+    },
+    {
+      role: 'assistant',
+      content: {
+        intro: 'AutoML complete! The best model is a <strong>gradient boosted tree</strong> with <strong>84% accuracy</strong>.',
+        tasks: [
+          {
+            title: 'Top Predictors',
+            inputs: [],
+            outputs: [],
+            description: '1. Prior trial participation<br>2. Distance to site<br>3. Contraindication count<br>4. Age<br>5. Recent lab values'
+          }
+        ],
+        footer: 'The model looks solid. Want me to deploy it to your flow so you can score new patients?'
+      }
+    },
+
+    // Deploy model
+    {
+      role: 'user',
+      text: 'Looks good. Deploy it to the flow.'
+    },
+    {
+      role: 'assistant',
+      content: {
+        intro: 'Model deployed! I\'ve added a scoring recipe to your flow.',
+        tasks: [
+          {
+            title: 'Score Patients',
+            inputs: ['patient_data_enriched', 'enrollment_model'],
+            outputs: ['trial_candidates_scored'],
+            description: 'Apply model to generate <span style="color:#28a9dd">enrollment_likelihood</span> score for each patient'
+          }
+        ],
+        footer: 'Each patient record now has an enrollment likelihood score. Would you like to set up automation so this runs whenever the source data updates?'
+      }
+    },
+
+    // Set up automation
+    {
+      role: 'user',
+      text: 'Yes, set it up to run automatically whenever the source data updates.'
+    },
+    {
+      role: 'assistant',
+      content: {
+        intro: 'Done! I\'ve created an automation scenario for you.',
+        tasks: [
+          {
+            title: 'Automation Scenario',
+            inputs: ['patient_demographics', 'lab_results'],
+            outputs: ['trial_candidates_scored'],
+            description: 'Triggers when <span style="color:#28a9dd">patient_demographics</span> or <span style="color:#28a9dd">lab_results</span> are updated. Rebuilds the full pipeline and notifies you if anything fails.'
+          }
+        ],
+        footer: 'Your pipeline is now fully automated. Is there anything else you\'d like to configure?'
+      }
+    },
+
+    // Share with team
+    {
+      role: 'user',
+      text: 'Share the scored dataset with the trial enrollment agent and the clinical ops team.'
+    },
+    {
+      role: 'assistant',
+      content: {
+        intro: 'Done! I\'ve updated the sharing settings:',
+        tasks: [
+          {
+            title: 'Dataset Shared',
+            inputs: [],
+            outputs: ['trial_candidates_scored'],
+            description: '• Trial Enrollment Assistant agent: <strong>read access</strong><br>• Clinical Ops group: <strong>read access</strong>'
+          }
+        ],
+        footer: 'Your team can now access the scored patient list. The enrollment agent will use this to help coordinators identify and reach out to promising candidates.'
       }
     }
   ],
 
   // Timing settings
-  typingSpeed: 30,        // ms per character for user message animation
-  aiResponseDelay: 800    // ms before showing AI response
+  typingSpeed: 25,        // slightly faster for longer demo
+  aiResponseDelay: 1000   // a bit more pause for realism
 };
 
-console.log('[FakeChat] Config loaded with', window.fakeChatConfig.conversation.length, 'messages');
+console.log('[FakeChat] Clinical Trial Demo config loaded with', window.fakeChatConfig.conversation.length, 'messages');
