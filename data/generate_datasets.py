@@ -4,14 +4,24 @@ Generate fake clinical trial datasets for the Agentic Data Prep Demo.
 Datasets:
 1. patient_demographics (~12,400 records)
 2. lab_results_2024 (~45,000 records)
-3. clinical_notes_raw (~28,000 records)
+3. clinical_notes_raw (~28,000 records) - can use Claude API for realistic generation
 
 Usage:
-    pip install faker pandas
+    pip install faker pandas anthropic
+
+    # Basic generation (template-based notes):
     python generate_datasets.py
+
+    # With Claude-generated notes (requires ANTHROPIC_API_KEY):
+    python generate_datasets.py --use-claude --num-notes 1000
+
+    # RECOMMENDED: Generate 2k base notes with Claude, expand to 28k with variations:
+    python generate_datasets.py --expand-notes --base-notes 2000
 """
 
+import argparse
 import random
+import os
 from datetime import datetime, timedelta
 from faker import Faker
 import pandas as pd
@@ -191,8 +201,297 @@ def generate_lab_results(num_results, patient_ids):
 # ============================================
 # Dataset 3: clinical_notes_raw
 # ============================================
-def generate_clinical_notes(num_notes, patient_ids):
-    """Generate messy clinical notes with realistic medical text."""
+
+# Example notes from the Google Doc (showing realistic messiness)
+EXAMPLE_NOTES = [
+    {
+        "note_type": "Progress Note",
+        "note_text": "Pt presents w/ hx of hypertension, prev tx w/ lisinopril 10mg discontinued d/t persistent cough. Currently on amlodipine 5mg. No known allergeis. Prev enrolled in CARD-2022 trial, completed full protocol."
+    },
+    {
+        "note_type": "Consultation",
+        "note_text": "58 yo F w/ Type 2 DM, on metformin 1000mg BID. Contraindications: sulfa allergy, hx of angioedema. Prior treatments incl glipizide (d/c for hypoglycemia), trulicity (insurance denial)."
+    },
+    {
+        "note_type": "Follow-up",
+        "note_text": "Follow up visit. Patient tolerated previus chemo well. No new symtpoms. Labs reviewed - ANC recovered. Eligibile for continued treatment. Note: pt has pacemaker - contrindication for MRI-based studies."
+    },
+    {
+        "note_type": "Discharge Summary",
+        "note_text": "Hx: CAD s/p CABG 2019, CHF (EF 35%), CKD stage 3. Current meds: carvedilol, furosemide, atorvastatin. CONTRAINDICATED for nephrotoxic agents. Previous trial: withdrew from HEART-001 due to transportation issues."
+    },
+]
+
+
+def expand_notes_with_variations(base_notes_df, target_count, patient_ids):
+    """Expand a smaller set of Claude-generated notes to a larger dataset using variations.
+
+    Variations include:
+    - Different patient_id, note_date, provider_id
+    - Medication/dosage substitutions
+    - Age/number substitutions
+    - Typo variations
+    """
+    import re
+
+    # Substitution mappings
+    med_substitutions = {
+        "lisinopril": ["losartan", "enalapril", "ramipril", "benazepril"],
+        "amlodipine": ["nifedipine", "diltiazem", "verapamil", "felodipine"],
+        "metoprolol": ["atenolol", "carvedilol", "bisoprolol", "propranolol"],
+        "metformin": ["glipizide", "glyburide", "sitagliptin", "pioglitazone"],
+        "atorvastatin": ["rosuvastatin", "simvastatin", "pravastatin", "lovastatin"],
+        "furosemide": ["bumetanide", "torsemide", "hydrochlorothiazide", "spironolactone"],
+        "sertraline": ["fluoxetine", "paroxetine", "escitalopram", "citalopram"],
+        "omeprazole": ["pantoprazole", "esomeprazole", "lansoprazole", "rabeprazole"],
+        "gabapentin": ["pregabalin", "duloxetine", "amitriptyline", "nortriptyline"],
+        "warfarin": ["apixaban", "rivaroxaban", "dabigatran", "edoxaban"],
+    }
+
+    dosage_substitutions = {
+        "5mg": ["2.5mg", "10mg", "7.5mg"],
+        "10mg": ["5mg", "20mg", "15mg"],
+        "20mg": ["10mg", "40mg", "25mg"],
+        "25mg": ["12.5mg", "50mg", "37.5mg"],
+        "50mg": ["25mg", "100mg", "75mg"],
+        "100mg": ["50mg", "200mg", "150mg"],
+        "500mg": ["250mg", "750mg", "1000mg"],
+        "1000mg": ["500mg", "850mg", "1500mg"],
+    }
+
+    # Typo additions/variations
+    typo_pairs = [
+        ("patient", "patietn"), ("previous", "previus"), ("symptoms", "symtpoms"),
+        ("eligible", "eligibile"), ("recommend", "reccomend"), ("follow up", "followup"),
+        ("allergies", "allergeis"), ("treatment", "treatement"), ("received", "recieved"),
+        ("occurred", "occured"), ("assessment", "assesment"), ("necessary", "neccessary"),
+    ]
+
+    provider_ids = [f"DR-{i:04d}" for i in range(50)]
+
+    records = []
+    base_notes = base_notes_df.to_dict('records')
+    notes_per_base = (target_count // len(base_notes)) + 1
+
+    for base_note in base_notes:
+        # Create variations of this note
+        for var_num in range(notes_per_base):
+            if len(records) >= target_count:
+                break
+
+            note_text = base_note["note_text"]
+
+            # Apply medication substitutions (30% chance per med)
+            for orig_med, alternatives in med_substitutions.items():
+                if orig_med.lower() in note_text.lower() and random.random() < 0.3:
+                    pattern = re.compile(re.escape(orig_med), re.IGNORECASE)
+                    note_text = pattern.sub(random.choice(alternatives), note_text)
+
+            # Apply dosage substitutions (40% chance)
+            for orig_dose, alternatives in dosage_substitutions.items():
+                if orig_dose in note_text and random.random() < 0.4:
+                    note_text = note_text.replace(orig_dose, random.choice(alternatives))
+
+            # Substitute ages (find patterns like "65 yo" or "65 year old")
+            age_pattern = r'\b(\d{2})\s*(yo|year old|y\.o\.|y/o)'
+            def replace_age(match):
+                new_age = int(match.group(1)) + random.randint(-10, 10)
+                new_age = max(25, min(90, new_age))
+                return f"{new_age} {match.group(2)}"
+            if random.random() < 0.5:
+                note_text = re.sub(age_pattern, replace_age, note_text, flags=re.IGNORECASE)
+
+            # Substitute percentages (EF values, etc.)
+            def replace_percent(match):
+                val = int(match.group(1))
+                new_val = val + random.randint(-5, 5)
+                new_val = max(15, min(70, new_val))
+                return f"{new_val}%"
+            if random.random() < 0.4:
+                note_text = re.sub(r'\b(\d{2})%', replace_percent, note_text)
+
+            # Add or fix typos (20% chance)
+            if random.random() < 0.2:
+                correct, typo = random.choice(typo_pairs)
+                if random.random() < 0.5 and correct in note_text.lower():
+                    # Add typo
+                    pattern = re.compile(re.escape(correct), re.IGNORECASE)
+                    note_text = pattern.sub(typo, note_text, count=1)
+                elif typo in note_text.lower():
+                    # Fix typo (make some notes cleaner)
+                    pattern = re.compile(re.escape(typo), re.IGNORECASE)
+                    note_text = pattern.sub(correct, note_text, count=1)
+
+            records.append({
+                "patient_id": random.choice(patient_ids),
+                "note_date": fake.date_between(start_date="-1y", end_date="today").isoformat(),
+                "provider_id": random.choice(provider_ids),
+                "note_type": base_note["note_type"],
+                "note_text": note_text
+            })
+
+    # Shuffle to mix up the variations
+    random.shuffle(records)
+    return pd.DataFrame(records[:target_count])
+
+
+def generate_clinical_notes_with_claude(num_notes, patient_df, batch_size=20, max_concurrent=10):
+    """Generate clinical notes using Claude API for realistic, contextual notes.
+
+    Uses concurrent API calls for much faster generation.
+
+    Args:
+        num_notes: Number of notes to generate
+        patient_df: DataFrame with patient demographics for context
+        batch_size: Number of notes to generate per API call (default: 20)
+        max_concurrent: Maximum concurrent API calls (default: 10)
+    """
+    import asyncio
+    try:
+        import anthropic
+    except ImportError:
+        print("ERROR: anthropic package not installed. Run: pip install anthropic")
+        return None
+
+    api_key = os.environ.get("ANTHROPIC_API_KEY")
+    if not api_key:
+        print("ERROR: ANTHROPIC_API_KEY environment variable not set")
+        return None
+
+    note_types = ["Progress Note", "Consultation", "Discharge Summary", "Follow-up", "Initial Assessment"]
+    provider_ids = [f"DR-{i:04d}" for i in range(50)]
+
+    # Build few-shot examples
+    examples_text = "\n\n".join([
+        f"Note Type: {ex['note_type']}\nNote: {ex['note_text']}"
+        for ex in EXAMPLE_NOTES
+    ])
+
+    system_prompt = f"""You are generating realistic clinical notes for a healthcare demo.
+The notes should:
+1. Be messy and realistic - include typos, abbreviations (w/, hx, d/t, BID, s/p, etc.), inconsistent formatting
+2. Reference clinical trials, contraindications, prior treatments when relevant
+3. Match the note_type (Progress Note, Consultation, Discharge Summary, Follow-up, Initial Assessment)
+4. Be appropriate for the patient's age and any context provided
+5. Vary in length and style - some brief, some detailed
+
+Example notes showing the desired style:
+
+{examples_text}
+
+Generate notes that look like they were quickly typed by busy physicians."""
+
+    # Prepare all batches upfront
+    all_batches = []
+    total_notes = 0
+    while total_notes < num_notes:
+        batch_records = []
+        contexts = []
+        current_batch_size = min(batch_size, num_notes - total_notes)
+
+        for _ in range(current_batch_size):
+            patient = patient_df.sample(1).iloc[0]
+            note_type = random.choice(note_types)
+            note_date = fake.date_between(start_date="-1y", end_date="today").isoformat()
+            provider_id = random.choice(provider_ids)
+
+            context = {
+                "patient_id": patient["patient_id"],
+                "age": patient["age"],
+                "gender": patient["gender"],
+                "region": patient["region"],
+                "enrollment_history": patient["enrollment_history"],
+                "contraindication_count": patient["contraindication_count"],
+                "note_type": note_type,
+                "note_date": note_date,
+                "provider_id": provider_id
+            }
+            contexts.append(context)
+            batch_records.append({
+                "patient_id": patient["patient_id"],
+                "note_date": note_date,
+                "provider_id": provider_id,
+                "note_type": note_type,
+            })
+
+        # Build prompt for batch
+        prompt = "Generate clinical notes for the following patients. Return ONLY the note text for each, separated by '---'.\n\n"
+        for i, ctx in enumerate(contexts, 1):
+            prompt += f"{i}. {ctx['age']} year old {ctx['gender']}, Note Type: {ctx['note_type']}"
+            if ctx['enrollment_history'] > 0:
+                prompt += f", Prior trial enrollments: {ctx['enrollment_history']}"
+            if ctx['contraindication_count'] > 0:
+                prompt += f", Has {ctx['contraindication_count']} contraindication(s)"
+            prompt += "\n"
+
+        all_batches.append((batch_records, prompt))
+        total_notes += current_batch_size
+
+    num_batches = len(all_batches)
+    print(f"   Generating {num_notes} notes in {num_batches} batches ({max_concurrent} concurrent)...")
+
+    # Async function to process a single batch
+    async def process_batch(client, batch_idx, batch_records, prompt):
+        try:
+            response = await asyncio.to_thread(
+                client.messages.create,
+                model="claude-sonnet-4-20250514",
+                max_tokens=8000,
+                system=system_prompt,
+                messages=[{"role": "user", "content": prompt}]
+            )
+
+            notes = response.content[0].text.split("---")
+            notes = [n.strip() for n in notes if n.strip()]
+
+            for i, record in enumerate(batch_records):
+                if i < len(notes):
+                    record["note_text"] = notes[i]
+                else:
+                    record["note_text"] = "Note not available."
+
+            return batch_records
+        except Exception as e:
+            print(f"   Warning: API error in batch {batch_idx + 1}: {e}")
+            for record in batch_records:
+                record["note_text"] = "Note generation failed."
+            return batch_records
+
+    # Process batches with concurrency limit
+    async def process_all_batches():
+        client = anthropic.Anthropic(api_key=api_key)
+        semaphore = asyncio.Semaphore(max_concurrent)
+        completed = [0]
+
+        async def bounded_process(batch_idx, batch_records, prompt):
+            async with semaphore:
+                result = await process_batch(client, batch_idx, batch_records, prompt)
+                completed[0] += 1
+                if completed[0] % 10 == 0 or completed[0] == num_batches:
+                    notes_done = min(completed[0] * batch_size, num_notes)
+                    print(f"   Progress: {notes_done}/{num_notes} notes generated")
+                return result
+
+        tasks = [
+            bounded_process(i, batch_records, prompt)
+            for i, (batch_records, prompt) in enumerate(all_batches)
+        ]
+        results = await asyncio.gather(*tasks)
+        return results
+
+    # Run async processing
+    all_results = asyncio.run(process_all_batches())
+
+    # Flatten results
+    records = []
+    for batch_result in all_results:
+        records.extend(batch_result)
+
+    return pd.DataFrame(records)
+
+
+def generate_clinical_notes_template(num_notes, patient_ids):
+    """Generate clinical notes using templates (fast, no API required)."""
 
     note_types = ["Progress Note", "Consultation", "Discharge Summary", "Follow-up", "Initial Assessment"]
 
@@ -332,11 +631,26 @@ def generate_clinical_notes(num_notes, patient_ids):
 # Main
 # ============================================
 def main():
-    print("Generating clinical trial datasets...")
+    parser = argparse.ArgumentParser(description="Generate clinical trial demo datasets")
+    parser.add_argument("--use-claude", action="store_true",
+                        help="Use Claude API for clinical note generation (requires ANTHROPIC_API_KEY)")
+    parser.add_argument("--expand-notes", action="store_true",
+                        help="Generate base notes with Claude then expand using variations (recommended)")
+    parser.add_argument("--base-notes", type=int, default=2000,
+                        help="Number of base notes to generate with Claude when using --expand-notes (default: 2000)")
+    parser.add_argument("--num-notes", type=int, default=NUM_CLINICAL_NOTES,
+                        help=f"Number of clinical notes to generate (default: {NUM_CLINICAL_NOTES})")
+    parser.add_argument("--num-patients", type=int, default=NUM_PATIENTS,
+                        help=f"Number of patients to generate (default: {NUM_PATIENTS})")
+    parser.add_argument("--num-lab-results", type=int, default=NUM_LAB_RESULTS,
+                        help=f"Number of lab results to generate (default: {NUM_LAB_RESULTS})")
+    args = parser.parse_args()
+
+    print("Generating clinical trial datasets...", flush=True)
 
     # Generate patient demographics first (we need patient IDs for other datasets)
-    print(f"\n1. Generating patient_demographics ({NUM_PATIENTS:,} records)...")
-    patient_df = generate_patient_demographics(NUM_PATIENTS)
+    print(f"\n1. Generating patient_demographics ({args.num_patients:,} records)...", flush=True)
+    patient_df = generate_patient_demographics(args.num_patients)
     patient_ids = patient_df["patient_id"].tolist()
     patient_df.to_csv("patient_demographics.csv", index=False)
     print(f"   Saved: patient_demographics.csv")
@@ -345,8 +659,8 @@ def main():
     print(f"   Contraindication counts: {patient_df['contraindication_count'].value_counts().sort_index().to_dict()}")
 
     # Generate lab results
-    print(f"\n2. Generating lab_results_2024 ({NUM_LAB_RESULTS:,} records)...")
-    lab_df = generate_lab_results(NUM_LAB_RESULTS, patient_ids)
+    print(f"\n2. Generating lab_results_2024 ({args.num_lab_results:,} records)...")
+    lab_df = generate_lab_results(args.num_lab_results, patient_ids)
     lab_df.to_csv("lab_results_2024.csv", index=False)
     print(f"   Saved: lab_results_2024.csv")
     print(f"   Flag distribution: {lab_df['flag'].value_counts().to_dict()}")
@@ -355,8 +669,29 @@ def main():
     print(f"   Planted {len(obvious)} obvious data entry errors for manual correction")
 
     # Generate clinical notes
-    print(f"\n3. Generating clinical_notes_raw ({NUM_CLINICAL_NOTES:,} records)...")
-    notes_df = generate_clinical_notes(NUM_CLINICAL_NOTES, patient_ids)
+    print(f"\n3. Generating clinical_notes_raw ({args.num_notes:,} records)...")
+
+    if args.expand_notes:
+        # Two-step approach: generate base notes with Claude, then expand with variations
+        print(f"   Step 1: Generating {args.base_notes:,} base notes with Claude API...")
+        base_notes_df = generate_clinical_notes_with_claude(args.base_notes, patient_df)
+        if base_notes_df is None:
+            print("   ERROR: Claude API failed. Falling back to template-based generation...")
+            notes_df = generate_clinical_notes_template(args.num_notes, patient_ids)
+        else:
+            print(f"   Step 2: Expanding to {args.num_notes:,} notes using variations...")
+            notes_df = expand_notes_with_variations(base_notes_df, args.num_notes, patient_ids)
+            print(f"   Expansion complete: {args.base_notes:,} base notes -> {len(notes_df):,} total notes")
+    elif args.use_claude:
+        print("   Using Claude API for note generation...")
+        notes_df = generate_clinical_notes_with_claude(args.num_notes, patient_df)
+        if notes_df is None:
+            print("   Falling back to template-based generation...")
+            notes_df = generate_clinical_notes_template(args.num_notes, patient_ids)
+    else:
+        print("   Using template-based generation (use --use-claude or --expand-notes for AI-generated notes)")
+        notes_df = generate_clinical_notes_template(args.num_notes, patient_ids)
+
     notes_df.to_csv("clinical_notes_raw.csv", index=False)
     print(f"   Saved: clinical_notes_raw.csv")
     print(f"   Note types: {notes_df['note_type'].value_counts().to_dict()}")
