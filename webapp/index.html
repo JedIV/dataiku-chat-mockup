@@ -53,6 +53,21 @@
             </div>
 
             <div class="dashboard-grid">
+                <!-- Prediction Card -->
+                <div class="card prediction-card">
+                    <div class="card-header">
+                        <span class="card-title">&#x1F3AF; Enrollment Prediction</span>
+                    </div>
+                    <div class="prediction-content" id="predictionContent">
+                        <div class="prediction-gauge">
+                            <canvas id="predictionGauge"></canvas>
+                        </div>
+                        <div class="prediction-details" id="predictionDetails">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Patient Demographics -->
                 <div class="card">
                     <div class="card-header">
@@ -71,21 +86,6 @@
                     </div>
                     <div class="factors-grid" id="factorsGrid">
                         <!-- Populated dynamically -->
-                    </div>
-                </div>
-
-                <!-- Prediction Card -->
-                <div class="card prediction-card">
-                    <div class="card-header">
-                        <span class="card-title">&#x1F3AF; Enrollment Prediction</span>
-                    </div>
-                    <div class="prediction-content" id="predictionContent">
-                        <div class="prediction-gauge">
-                            <canvas id="predictionGauge"></canvas>
-                        </div>
-                        <div class="prediction-details" id="predictionDetails">
-                            <!-- Populated dynamically -->
-                        </div>
                     </div>
                 </div>
 
