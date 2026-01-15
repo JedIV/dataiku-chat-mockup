@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clinical Trial Enrollment Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="/dip/api/js/dataiku.js"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header class="header">
+        <h1>
+            <span class="header-icon">&#x1F3E5;</span>
+            Clinical Trial Enrollment Predictor
+        </h1>
+        <p>Patient enrollment success prediction dashboard for clinical study coordinators</p>
+    </header>
+
+    <main class="container">
+        <section class="search-section">
+            <h2>&#x1F50D; Patient Lookup</h2>
+            <form class="search-form" id="searchForm">
+                <div class="form-group">
+                    <label for="patientId">Patient ID</label>
+                    <input type="text" id="patientId" placeholder="e.g., PT-2025-00001" autocomplete="off">
+                </div>
+                <button type="submit" class="btn">
+                    <span>&#x1F50E;</span> Search Patient
+                </button>
+            </form>
+            <div class="patient-list-hint">
+                <strong>Quick lookup:</strong> Click a sample patient ID to view their record.
+                <div class="sample-ids" id="sampleIds"></div>
+            </div>
+        </section>
+
+        <section id="loadingSection" class="loading" style="display: none;">
+            <div class="spinner"></div>
+            <span>Loading patient data...</span>
+        </section>
+
+        <section id="errorSection" style="display: none;">
+            <div class="error-message">
+                <span style="font-size: 1.5rem;">&#x26A0;</span>
+                <span id="errorText">Patient not found</span>
+            </div>
+        </section>
+
+        <section id="resultsSection" class="results-section">
+            <div class="stats-row" id="statsRow">
+                <!-- Stats populated dynamically -->
+            </div>
+
+            <div class="dashboard-grid">
+                <!-- Patient Demographics -->
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">&#x1F464; Patient Demographics</span>
+                        <span class="card-badge" id="contactBadge">Active</span>
+                    </div>
+                    <div class="patient-info-grid" id="demographicsGrid">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+
+                <!-- Enrollment Factors -->
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">&#x1F4CA; Enrollment Factors</span>
+                    </div>
+                    <div class="factors-grid" id="factorsGrid">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+
+                <!-- Prediction Card -->
+                <div class="card prediction-card">
+                    <div class="card-header">
+                        <span class="card-title">&#x1F3AF; Enrollment Prediction</span>
+                    </div>
+                    <div class="prediction-content" id="predictionContent">
+                        <div class="prediction-gauge">
+                            <canvas id="predictionGauge"></canvas>
+                        </div>
+                        <div class="prediction-details" id="predictionDetails">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Lab Results -->
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">&#x1F9EA; Lab Results</span>
+                    </div>
+                    <table class="lab-results-table" id="labTable">
+                        <thead>
+                            <tr>
+                                <th>Test</th>
+                                <th>Result</th>
+                                <th>Reference</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="labBody">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                    <div class="chart-container">
+                        <canvas id="labChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Clinical Notes -->
+                <div class="card notes-card">
+                    <div class="card-header">
+                        <span class="card-title">&#x1F4DD; Clinical Notes</span>
+                    </div>
+                    <div class="note-item" id="noteContent">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>

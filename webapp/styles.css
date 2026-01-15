@@ -1,0 +1,578 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+    background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%);
+    min-height: 100vh;
+    color: #2c3e50;
+}
+
+.header {
+    background: linear-gradient(135deg, #1a5276 0%, #2980b9 100%);
+    color: white;
+    padding: 1.5rem 2rem;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.header h1 {
+    font-size: 1.75rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.header-icon {
+    width: 40px;
+    height: 40px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+}
+
+.header p {
+    margin-top: 0.5rem;
+    opacity: 0.9;
+    font-size: 0.95rem;
+}
+
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+.search-section {
+    background: white;
+    border-radius: 16px;
+    padding: 2rem;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    margin-bottom: 2rem;
+}
+
+.search-section h2 {
+    font-size: 1.25rem;
+    color: #1a5276;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.search-form {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-end;
+    flex-wrap: wrap;
+}
+
+.form-group {
+    flex: 1;
+    min-width: 250px;
+}
+
+.form-group label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #5d6d7e;
+    margin-bottom: 0.5rem;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 0.875rem 1rem;
+    border: 2px solid #e8ecef;
+    border-radius: 10px;
+    font-size: 1rem;
+    transition: all 0.2s;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: #2980b9;
+    box-shadow: 0 0 0 3px rgba(41, 128, 185, 0.1);
+}
+
+.btn {
+    padding: 0.875rem 2rem;
+    background: linear-gradient(135deg, #2980b9 0%, #1a5276 100%);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(41, 128, 185, 0.4);
+}
+
+.btn:active {
+    transform: translateY(0);
+}
+
+.patient-list-hint {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    color: #5d6d7e;
+}
+
+.patient-list-hint strong {
+    color: #1a5276;
+}
+
+.results-section {
+    display: none;
+}
+
+.results-section.active {
+    display: block;
+}
+
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 1.5rem;
+}
+
+.card {
+    background: white;
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+}
+
+.card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #e8ecef;
+}
+
+.card-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #1a5276;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.card-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.badge-active {
+    background: #d4efdf;
+    color: #27ae60;
+}
+
+.badge-inactive {
+    background: #fadbd8;
+    color: #e74c3c;
+}
+
+.patient-info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+}
+
+.info-item {
+    padding: 0.75rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.info-label {
+    font-size: 0.75rem;
+    color: #5d6d7e;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.25rem;
+}
+
+.info-value {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.prediction-card {
+    grid-column: span 2;
+}
+
+@media (max-width: 900px) {
+    .prediction-card {
+        grid-column: span 1;
+    }
+}
+
+.prediction-content {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    flex-wrap: wrap;
+}
+
+.prediction-gauge {
+    flex: 0 0 200px;
+    position: relative;
+}
+
+.prediction-details {
+    flex: 1;
+    min-width: 250px;
+}
+
+.prediction-result {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.prediction-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+}
+
+.prediction-success .prediction-icon {
+    background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+    color: white;
+}
+
+.prediction-failure .prediction-icon {
+    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+    color: white;
+}
+
+.prediction-text h3 {
+    font-size: 1.5rem;
+    margin-bottom: 0.25rem;
+}
+
+.prediction-success .prediction-text h3 {
+    color: #27ae60;
+}
+
+.prediction-failure .prediction-text h3 {
+    color: #e74c3c;
+}
+
+.prediction-text p {
+    color: #5d6d7e;
+    font-size: 0.95rem;
+}
+
+.probability-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.probability-bar {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.probability-label {
+    width: 100px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #5d6d7e;
+}
+
+.probability-track {
+    flex: 1;
+    height: 24px;
+    background: #e8ecef;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.probability-fill {
+    height: 100%;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: 0.75rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: white;
+    transition: width 0.5s ease;
+}
+
+.probability-success {
+    background: linear-gradient(90deg, #2ecc71 0%, #27ae60 100%);
+}
+
+.probability-failure {
+    background: linear-gradient(90deg, #e74c3c 0%, #c0392b 100%);
+}
+
+.notes-card {
+    grid-column: span 2;
+}
+
+@media (max-width: 900px) {
+    .notes-card {
+        grid-column: span 1;
+    }
+}
+
+.note-item {
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 1.25rem;
+    border-left: 4px solid #2980b9;
+}
+
+.note-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.note-type {
+    padding: 0.25rem 0.75rem;
+    background: #d6eaf8;
+    color: #1a5276;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.note-meta {
+    font-size: 0.8rem;
+    color: #5d6d7e;
+}
+
+.note-text {
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: #2c3e50;
+}
+
+.lab-results-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.lab-results-table th,
+.lab-results-table td {
+    padding: 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid #e8ecef;
+}
+
+.lab-results-table th {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #5d6d7e;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.lab-results-table td {
+    font-size: 0.95rem;
+}
+
+.lab-flag {
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.flag-normal {
+    background: #d4efdf;
+    color: #27ae60;
+}
+
+.flag-high {
+    background: #fadbd8;
+    color: #e74c3c;
+}
+
+.flag-low {
+    background: #fef9e7;
+    color: #f39c12;
+}
+
+.chart-container {
+    position: relative;
+    height: 200px;
+    margin-top: 1rem;
+}
+
+.factors-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+}
+
+.factor-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.factor-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+}
+
+.factor-positive .factor-icon {
+    background: #d4efdf;
+    color: #27ae60;
+}
+
+.factor-negative .factor-icon {
+    background: #fadbd8;
+    color: #e74c3c;
+}
+
+.factor-neutral .factor-icon {
+    background: #fef9e7;
+    color: #f39c12;
+}
+
+.factor-text {
+    font-size: 0.875rem;
+}
+
+.factor-label {
+    color: #5d6d7e;
+    font-size: 0.75rem;
+}
+
+.factor-value {
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.error-message {
+    background: #fadbd8;
+    border: 1px solid #e74c3c;
+    color: #c0392b;
+    padding: 1rem 1.5rem;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem;
+    color: #5d6d7e;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #e8ecef;
+    border-top-color: #2980b9;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-right: 1rem;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.sample-ids {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+}
+
+.sample-id {
+    padding: 0.25rem 0.75rem;
+    background: #e8ecef;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-family: monospace;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.sample-id:hover {
+    background: #2980b9;
+    color: white;
+}
+
+.stats-row {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.stat-card {
+    flex: 1;
+    min-width: 150px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #fff 100%);
+    border: 1px solid #e8ecef;
+    border-radius: 12px;
+    padding: 1rem;
+    text-align: center;
+}
+
+.stat-value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #1a5276;
+}
+
+.stat-label {
+    font-size: 0.8rem;
+    color: #5d6d7e;
+    margin-top: 0.25rem;
+}
