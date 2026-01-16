@@ -250,6 +250,69 @@ window.fakeChatConfig = {
         ],
         footer: 'Your team can now access the scored patient list. The enrollment agent will use this to help coordinators identify and reach out to promising candidates.'
       }
+    },
+
+    // Request webapp
+    {
+      role: 'user',
+      text: 'Build me a webapp where coordinators can look up individual patients, see their enrollment score, and view their clinical notes and lab results.'
+    },
+    {
+      role: 'assistant',
+      content: {
+        intro: 'I\'ll create a patient lookup webapp for your coordinators. It will include:',
+        tasks: [
+          {
+            title: 'Patient Lookup Webapp',
+            inputs: ['trial_candidates_scored'],
+            outputs: ['patient_lookup_webapp'],
+            description: '• Search by <span style="color:#28a9dd">patient_id</span><br>• Display enrollment likelihood score with visual indicator<br>• Show lab results chart and clinical notes<br>• Quick lookup buttons for sample patients'
+          }
+        ],
+        footer: 'I\'ll use the scored dataset as the data source and set up reader authorization automatically. Ready to build it?'
+      }
+    },
+
+    // Confirm webapp build
+    {
+      role: 'user',
+      text: 'Yes, build it.'
+    },
+    {
+      role: 'assistant',
+      content: {
+        intro: 'Building your webapp now...',
+        tasks: [
+          {
+            title: 'Creating Components',
+            inputs: [],
+            outputs: [],
+            description: '✓ Patient search interface<br>✓ Enrollment score visualization<br>✓ Lab results bar chart<br>✓ Clinical notes display<br>✓ Quick lookup sample IDs'
+          }
+        ],
+        footer: 'Give me a moment to configure the data connections and deploy...'
+      }
+    },
+
+    // Webapp complete with URL
+    {
+      role: 'user',
+      text: 'How\'s it going?'
+    },
+    {
+      role: 'assistant',
+      content: {
+        intro: 'Done! Your webapp is live and ready to use. 🎉',
+        tasks: [
+          {
+            title: 'Patient Lookup Webapp',
+            inputs: ['trial_candidates_scored'],
+            outputs: [],
+            description: '<strong>Public URL:</strong><br><a href="#" style="color:#28a9dd;text-decoration:none;">http://release-14-design.qa-deployments.dku.sh/webapps/PATIENTCOHORT/bGnJv5A/view</a><br><br>• Reader authorization configured for <span style="color:#28a9dd">trial_candidates_scored</span><br>• No authentication required for internal access'
+          }
+        ],
+        footer: 'Coordinators can now search for any patient and see their full enrollment profile. Want me to add any additional features?'
+      }
     }
   ],
 
