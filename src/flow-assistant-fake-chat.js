@@ -336,6 +336,14 @@
     observer.observe(document.body, { childList: true, subtree: true });
   }
 
+  function setupLayoutFixes() {
+    // Add top padding to Flow Assistant header area
+    var tabContent = document.querySelector('.object-summary-tab-content');
+    if (tabContent) {
+      tabContent.style.paddingTop = '8px';
+    }
+  }
+
   // ============================================
   // INITIALIZE
   // ============================================
@@ -343,6 +351,7 @@
   setupStyles();
   setupHotkeys();
   setupNewTaskHook();
+  setupLayoutFixes();
 
   console.log('[FakeChat] Ready! (' + config.conversation.length + ' messages loaded)');
   console.log('  Ctrl+Shift+N - Advance to next message');
