@@ -1,44 +1,66 @@
 /**
  * Flow Assistant Fake Chat - Configuration
  *
- * Clinical Trial Enrollment Agent Demo
- * Based on: Agentic Data Prep Demo - Scoping and Planning
+ * Clinical Trial Enrollment Pipeline Demo
+ * Matches the actual PATIENTCOHORT flow structure
  *
  * Paste this into the browser console BEFORE the main script.
  */
 
 window.fakeChatConfig = {
+  panelTitle: 'Patient Cohort Analysis',
+
   conversation: [
-    // Opening request
+    // ========================================
+    // STEP 1: Initial request - show source datasets
+    // ========================================
     {
       role: 'user',
-      text: 'I need to build a dataset for a trial enrollment agent. It should combine patient info with lab results and clinical notes so coordinators can find eligible candidates.'
+      text: 'I need to build a pipeline for clinical trial enrollment prediction. We have patient data, lab results, and clinical notes.'
     },
     {
       role: 'assistant',
       content: {
-        intro: 'I found a <em>patient_demographics</em> dataset in the Clinical Operations project that looks like a good starting point. It has <strong>12,400 records</strong> with patient ID, age, location, and contact info.',
+        intro: 'I found three relevant datasets in this project that we can use:',
         tasks: [
           {
-            title: 'Patient Demographics',
+            title: 'patient_demographics_sf',
             inputs: [],
-            outputs: ['patient_demographics'],
-            description: 'Source dataset with 12,400 patient records including <span style="color:#28a9dd">patient_id</span>, <span style="color:#28a9dd">age</span>, <span style="color:#28a9dd">location</span>, and contact information'
+            outputs: [],
+            description: '<strong>627 patients</strong> with demographics, contact info, and enrollment history'
+          },
+          {
+            title: 'lab_results_2025_sf',
+            inputs: [],
+            outputs: [],
+            description: '<strong>3,100+ lab records</strong> with blood panels, biomarkers, and test dates'
+          },
+          {
+            title: 'clinical_notes_raw_sf',
+            inputs: [],
+            outputs: [],
+            description: '<strong>1,800+ clinical notes</strong> with physician observations and visit summaries'
           }
         ],
-        footer: 'Want to start with this one? I can show you a preview.'
+        footer: 'Want me to show you the patient demographics? I can give you a quick overview of the population.',
+        action: {
+          type: 'revealFlowStep',
+          step: 'sources'
+        }
       }
     },
 
-    // Age distribution
+    // ========================================
+    // STEP 2: Show demographics with histogram
+    // ========================================
     {
       role: 'user',
-      text: 'Yes, show me a preview. What does the age distribution look like?'
+      text: 'Yes, show me the patient data.'
     },
     {
       role: 'assistant',
       content: {
-        intro: 'Here\'s what I found: the median age is <strong>58 years</strong>. About 70% of patients fall between 45 and 72, which aligns well with typical Phase III oncology trial criteria.',
+        intro: 'Here\'s an overview of the patient population. The median age is <strong>58 years</strong>, with most patients between 45-72—a good fit for typical Phase III oncology trials.',
         chart: {
           title: 'Age Distribution',
           unit: '%',
@@ -52,7 +74,7 @@ window.fakeChatConfig = {
           ]
         },
         tasks: [],
-        footer: 'Would you like me to find related datasets with lab results and clinical notes?',
+        footer: 'The lab results and clinical notes will need some processing before we can join them—they have multiple records per patient and some unstructured text. Want me to set that up?',
         action: {
           type: 'openDataset',
           dataset: 'patient_demographics_sf'
@@ -60,303 +82,336 @@ window.fakeChatConfig = {
       }
     },
 
-    // Finding additional datasets
+    // ========================================
+    // STEP 3: Parse the raw data
+    // ========================================
     {
       role: 'user',
-      text: 'Yes, I need to bring in lab results and clinical notes for these patients.'
+      text: 'Yes, process the lab results and clinical notes.'
     },
     {
       role: 'assistant',
       content: {
-        intro: 'I found three related datasets that can be joined on <span style="color:#28a9dd">patient_id</span>:',
+        intro: 'I\'ll create parsing recipes for both datasets. This will standardize the formats and extract structured fields from the clinical notes.',
         tasks: [
           {
-            title: 'Lab Results',
-            inputs: [],
-            outputs: ['lab_results'],
-            description: '<strong>45,000 records</strong> with blood panels, biomarkers, and test dates'
+            title: 'Parse Lab Results',
+            inputs: ['lab_results_2025_sf'],
+            outputs: ['lab_results_2025_sf_parsed'],
+            description: 'Standardize column names, parse dates, and validate numeric ranges'
           },
           {
-            title: 'Clinical Notes',
-            inputs: [],
-            outputs: ['clinical_notes'],
-            description: '<strong>28,000 records</strong> with free-text physician notes and visit summaries'
+            title: 'Parse Clinical Notes',
+            inputs: ['clinical_notes_raw_sf'],
+            outputs: ['clinical_notes_parsed_sf'],
+            description: 'Extract structured fields from free text: <span style="color:#28a9dd">diagnoses</span>, <span style="color:#28a9dd">medications</span>, <span style="color:#28a9dd">contraindications</span>'
+          }
+        ],
+        footer: 'Ready to create these recipes?',
+        action: {
+          type: 'goToFlow'
+        }
+      }
+    },
+
+    // ========================================
+    // STEP 4: Confirm parsing, show parsed outputs
+    // ========================================
+    {
+      role: 'user',
+      text: 'Yes, create them.'
+    },
+    {
+      role: 'assistant',
+      content: {
+        intro: 'Done! Both parsing recipes are running. Since patients have multiple lab tests and clinical visits over time, I\'ll also get the <strong>most recent record</strong> for each patient so we have one row per person for the join.',
+        tasks: [
+          {
+            title: 'Get Most Recent Lab Results',
+            inputs: ['lab_results_2025_sf_parsed'],
+            outputs: ['lab_results_2025_most_recent_sf'],
+            description: 'Group by <span style="color:#28a9dd">patient_id</span>, keep most recent test date'
           },
           {
-            title: 'Prior Trial Participation',
-            inputs: [],
-            outputs: ['trial_history'],
-            description: '<strong>8,500 records</strong> tracking previous enrollment history and outcomes'
+            title: 'Get Most Recent Clinical Notes',
+            inputs: ['clinical_notes_parsed_sf'],
+            outputs: ['clinical_notes_most_recent_per_patient_sf'],
+            description: 'Group by <span style="color:#28a9dd">patient_id</span>, keep most recent visit'
           }
         ],
-        footer: 'Which ones would you like to include?'
+        footer: 'This will give us a clean one-to-one relationship for joining. Should I proceed?',
+        action: {
+          type: 'revealFlowStep',
+          step: 'parse'
+        }
       }
     },
 
-    // Selecting datasets and joining
+    // ========================================
+    // STEP 5: Create most recent and join
+    // ========================================
     {
       role: 'user',
-      text: 'Let\'s use the lab results and clinical notes. Join them to the patient dataset on patient_id.'
+      text: 'Yes, and then join everything together.'
     },
     {
       role: 'assistant',
       content: {
-        intro: 'I\'ll create a join recipe to combine all three datasets on <span style="color:#28a9dd">patient_id</span>.',
+        intro: 'Perfect. I\'ll create the aggregation recipes and then join all three data sources on <span style="color:#28a9dd">patient_id</span>.',
         tasks: [
           {
-            title: 'Join Datasets',
-            inputs: ['patient_demographics', 'lab_results', 'clinical_notes'],
-            outputs: ['patient_data_joined'],
-            description: 'Left join on <span style="color:#28a9dd">patient_id</span> to combine demographics with lab results and clinical notes'
+            title: 'Join Patient Data',
+            inputs: ['patient_demographics_sf', 'lab_results_2025_most_recent_sf', 'clinical_notes_most_recent_per_patient_sf'],
+            outputs: ['patient_all_data_joined_sf'],
+            description: 'Left join on <span style="color:#28a9dd">patient_id</span> to create unified patient records with demographics, latest labs, and recent clinical notes'
           }
         ],
-        footer: 'Ready to create this flow?'
+        footer: 'Building the pipeline now...',
+        action: {
+          type: 'revealFlowStep',
+          step: 'mostRecent'
+        }
       }
     },
 
-    // Confirm join results
-    {
-      role: 'user',
-      text: 'Yes, create it.'
-    },
+    // ========================================
+    // STEP 6: Join complete, offer data review
+    // ========================================
     {
       role: 'assistant',
       content: {
-        intro: 'Done! The join completed with <strong>11,200 matched records</strong>. I\'ve added the recipe to your flow.',
+        intro: 'The join is complete! We now have <strong>627 unified patient records</strong> combining demographics, lab values, and clinical observations.',
         tasks: [],
-        footer: 'I noticed the clinical_notes column contains unstructured text. Would you like me to extract structured fields from it?'
+        footer: 'I\'d recommend reviewing the data quality before we build any models. Want me to open the statistics view?',
+        action: {
+          type: 'revealFlowStep',
+          step: 'join'
+        }
       }
     },
 
-    // LLM extraction from clinical notes
+    // ========================================
+    // STEP 7: Open statistics
+    // ========================================
     {
       role: 'user',
-      text: 'Yes, the clinical notes are messy. Can you extract prior treatments and any contraindications from the text?'
+      text: 'Yes, show me the statistics.'
     },
     {
       role: 'assistant',
       content: {
-        intro: 'I\'ll create a prepare recipe with an LLM step to extract structured data from the notes. The LLM will handle spelling variations, abbreviations, and different documentation styles.',
+        intro: 'Opening the statistics worksheet. You can see distributions for all the lab values—LDL Cholesterol, Red Blood Cell Count, Potassium, Hemoglobin, and more.',
         tasks: [
           {
-            title: 'Extract Clinical Entities',
-            inputs: ['patient_data_joined'],
-            outputs: ['patient_data_enriched'],
-            description: 'Use LLM to extract <span style="color:#28a9dd">prior_treatments</span> and <span style="color:#28a9dd">contraindications</span> from the free-text <span style="color:#28a9dd">clinical_notes</span> column'
-          }
-        ],
-        footer: 'Want me to run this on a sample first so you can review the extractions?'
-      }
-    },
-
-    // Run sample
-    {
-      role: 'user',
-      text: 'Yes, run it on a sample.'
-    },
-    {
-      role: 'assistant',
-      content: {
-        intro: 'Sample extraction complete. The LLM successfully identified treatments and contraindications in <strong>94%</strong> of the records. Before we continue, I\'d recommend reviewing the data quality—I noticed some missing values in the lab results.',
-        tasks: [],
-        footer: 'Want me to open the statistics view so you can review?'
-      }
-    },
-
-    // After data quality review, build model
-    {
-      role: 'user',
-      text: 'I reviewed the data and fixed a few outliers. Now I want to predict which patients are most likely to enroll and complete the trial.'
-    },
-    {
-      role: 'assistant',
-      content: {
-        intro: 'I can build a predictive model for that. I\'ll use <span style="color:#28a9dd">enrollment_success</span> as the target and train on age, location, prior trial history, and the clinical factors we just extracted.',
-        tasks: [
-          {
-            title: 'AutoML Training',
-            inputs: ['patient_data_enriched'],
-            outputs: ['enrollment_model'],
-            description: 'Train classification model to predict enrollment likelihood using patient demographics, lab results, and extracted clinical factors'
-          }
-        ],
-        footer: 'Want me to run AutoML? It\'ll evaluate multiple algorithms and select the best performer.'
-      }
-    },
-
-    // AutoML results
-    {
-      role: 'user',
-      text: 'Yes, run AutoML.'
-    },
-    {
-      role: 'assistant',
-      content: {
-        intro: 'AutoML complete! The best model is a <strong>gradient boosted tree</strong> with <strong>84% accuracy</strong>.',
-        tasks: [
-          {
-            title: 'Top Predictors',
+            title: 'Data Quality Summary',
             inputs: [],
             outputs: [],
-            description: '1. Prior trial participation<br>2. Distance to site<br>3. Contraindication count<br>4. Age<br>5. Recent lab values'
+            description: '• <strong>627</strong> total patients<br>• <strong>94%</strong> have complete lab panels<br>• <strong>12</strong> patients flagged with missing hemoglobin values'
           }
         ],
-        footer: 'The model looks solid. Want me to deploy it to your flow so you can score new patients?'
+        footer: 'The data looks good overall. When you\'re ready, I can use AI to enrich this with additional insights from the clinical notes.',
+        action: {
+          type: 'openStatistics',
+          dataset: 'patient_all_data_joined_sf'
+        }
       }
     },
 
-    // Deploy model
+    // ========================================
+    // STEP 8: AI enrichment
+    // ========================================
     {
       role: 'user',
-      text: 'Looks good. Deploy it to the flow.'
+      text: 'Let\'s add the AI enrichment.'
     },
     {
       role: 'assistant',
       content: {
-        intro: 'Model deployed! I\'ve added a scoring recipe to your flow.',
+        intro: 'I\'ll add an LLM prompt recipe to extract additional structured information from the clinical notes that might be useful for enrollment prediction.',
+        tasks: [
+          {
+            title: 'AI Enrichment',
+            inputs: ['patient_all_data_joined_sf'],
+            outputs: ['patient_all_data_joined_sf_generated'],
+            description: 'Use LLM to extract:<br>• <span style="color:#28a9dd">trial_eligibility_factors</span><br>• <span style="color:#28a9dd">risk_indicators</span><br>• <span style="color:#28a9dd">recommended_followup</span>'
+          }
+        ],
+        footer: 'This will help the model understand nuances in the clinical notes that simple parsing might miss. Ready to run it?',
+        action: {
+          type: 'goToFlow'
+        }
+      }
+    },
+
+    // ========================================
+    // STEP 9: Run AI, then build model
+    // ========================================
+    {
+      role: 'user',
+      text: 'Yes, run it. And then let\'s build the enrollment prediction model.'
+    },
+    {
+      role: 'assistant',
+      content: {
+        intro: 'AI enrichment complete! Now I\'ll train a model to predict <span style="color:#28a9dd">enrollment_success</span> using all the features we\'ve assembled.',
+        tasks: [
+          {
+            title: 'Enrollment Prediction Model',
+            inputs: ['patient_all_data_joined_sf_generated'],
+            outputs: ['Predict_enrollment_success'],
+            description: 'AutoML classification model using:<br>• Patient demographics (age, location)<br>• Lab values (cholesterol, hemoglobin, etc.)<br>• AI-extracted eligibility factors'
+          }
+        ],
+        footer: 'Training with AutoML to find the best algorithm...',
+        action: {
+          type: 'revealFlowStep',
+          step: 'ai'
+        }
+      }
+    },
+
+    // ========================================
+    // STEP 10: Model results
+    // ========================================
+    {
+      role: 'assistant',
+      content: {
+        intro: 'Model training complete! The best performer is a <strong>Random Forest</strong> with <strong>87% accuracy</strong> on the holdout set.',
+        chart: {
+          title: 'Feature Importance',
+          unit: 'importance',
+          data: [
+            { label: 'Prior Trials', value: 28 },
+            { label: 'Distance', value: 22 },
+            { label: 'Age', value: 18 },
+            { label: 'Hemoglobin', value: 15 },
+            { label: 'Risk Score', value: 12 }
+          ]
+        },
+        tasks: [],
+        footer: 'Prior trial participation and distance to site are the strongest predictors. Want me to deploy this model to score all patients?',
+        action: {
+          type: 'revealFlowStep',
+          step: 'model'
+        }
+      }
+    },
+
+    // ========================================
+    // STEP 11: Deploy scoring
+    // ========================================
+    {
+      role: 'user',
+      text: 'Yes, deploy it and score everyone.'
+    },
+    {
+      role: 'assistant',
+      content: {
+        intro: 'Model deployed! I\'ve created a scoring recipe that generates an <span style="color:#28a9dd">enrollment_likelihood</span> score for each patient.',
         tasks: [
           {
             title: 'Score Patients',
-            inputs: ['patient_data_enriched', 'enrollment_model'],
-            outputs: ['trial_candidates_scored'],
-            description: 'Apply model to generate <span style="color:#28a9dd">enrollment_likelihood</span> score for each patient'
+            inputs: ['patient_all_data_joined_sf_generated', 'Predict_enrollment_success'],
+            outputs: ['patient_all_data_joined_sf_scored'],
+            description: 'Each patient now has a score from 0-100 indicating their likelihood of successful enrollment'
           }
         ],
-        footer: 'Each patient record now has an enrollment likelihood score. Would you like to set up automation so this runs whenever the source data updates?'
+        footer: 'Your pipeline is complete! The scored dataset is ready for your enrollment coordinators.',
+        action: {
+          type: 'revealFlowStep',
+          step: 'scored'
+        }
       }
     },
 
-    // Set up automation
+    // ========================================
+    // STEP 12: Final summary
+    // ========================================
     {
       role: 'user',
-      text: 'Yes, set it up to run automatically whenever the source data updates.'
+      text: 'Great! Show me the full pipeline.'
     },
     {
       role: 'assistant',
       content: {
-        intro: 'Done! I\'ve created an automation scenario for you.',
+        intro: 'Here\'s your complete enrollment prediction pipeline:',
         tasks: [
           {
-            title: 'Automation Scenario',
-            inputs: ['patient_demographics', 'lab_results'],
-            outputs: ['trial_candidates_scored'],
-            description: 'Triggers when <span style="color:#28a9dd">patient_demographics</span> or <span style="color:#28a9dd">lab_results</span> are updated. Rebuilds the full pipeline and notifies you if anything fails.'
-          }
-        ],
-        footer: 'Your pipeline is now fully automated. Is there anything else you\'d like to configure?'
-      }
-    },
-
-    // Share with team
-    {
-      role: 'user',
-      text: 'Share the scored dataset with the trial enrollment agent and the clinical ops team.'
-    },
-    {
-      role: 'assistant',
-      content: {
-        intro: 'Done! I\'ve updated the sharing settings:',
-        tasks: [
-          {
-            title: 'Dataset Shared',
-            inputs: [],
-            outputs: ['trial_candidates_scored'],
-            description: '• Trial Enrollment Assistant agent: <strong>read access</strong><br>• Clinical Ops group: <strong>read access</strong>'
-          }
-        ],
-        footer: 'Your team can now access the scored patient list. The enrollment agent will use this to help coordinators identify and reach out to promising candidates.'
-      }
-    },
-
-    // Summary offer
-    {
-      role: 'assistant',
-      content: {
-        intro: 'Would you like me to add a summary of the steps we performed to the project description? This can help other team members understand the pipeline at a glance.',
-        tasks: [],
-        footer: ''
-      }
-    },
-    {
-      role: 'user',
-      text: 'Yes, add a summary.'
-    },
-    {
-      role: 'assistant',
-      content: {
-        intro: 'Done! I\'ve updated the project description with a narrative summary of the pipeline we built—how we joined the datasets, used the LLM to extract clinical entities, trained the enrollment model, and set up automation.',
-        tasks: [],
-        footer: 'Is there anything else you\'d like to add to the project?'
-      }
-    },
-
-    // Request webapp
-    {
-      role: 'user',
-      text: 'Build me a webapp where coordinators can look up individual patients, see their enrollment score, and view their clinical notes and lab results.'
-    },
-    {
-      role: 'assistant',
-      content: {
-        intro: 'I\'ll create a patient lookup webapp for your coordinators. It will include:',
-        tasks: [
-          {
-            title: 'Patient Lookup Webapp',
-            inputs: ['trial_candidates_scored'],
-            outputs: ['patient_lookup_webapp'],
-            description: '• Search by <span style="color:#28a9dd">patient_id</span><br>• Display enrollment likelihood score with visual indicator<br>• Show lab results chart and clinical notes<br>• Quick lookup buttons for sample patients'
-          }
-        ],
-        footer: 'I\'ll use the scored dataset as the data source and set up reader authorization automatically. Ready to build it?'
-      }
-    },
-
-    // Confirm webapp build
-    {
-      role: 'user',
-      text: 'Yes, build it.'
-    },
-    {
-      role: 'assistant',
-      content: {
-        intro: 'Building your webapp now...',
-        tasks: [
-          {
-            title: 'Creating Components',
+            title: 'Pipeline Summary',
             inputs: [],
             outputs: [],
-            description: '✓ Patient search interface<br>✓ Enrollment score visualization<br>✓ Lab results bar chart<br>✓ Clinical notes display<br>✓ Quick lookup sample IDs'
+            description: '1. <strong>Source Data</strong>: 3 datasets (demographics, labs, notes)<br>2. <strong>Processing</strong>: Parse and get most recent records<br>3. <strong>Join</strong>: Unified patient view (627 records)<br>4. <strong>AI Enrichment</strong>: LLM-extracted eligibility factors<br>5. <strong>Model</strong>: 87% accurate enrollment prediction<br>6. <strong>Output</strong>: Scored patient list ready for coordinators'
           }
         ],
-        footer: 'Give me a moment to configure the data connections and deploy...'
-      }
-    },
-
-    // Webapp complete with URL
-    {
-      role: 'user',
-      text: 'How\'s it going?'
-    },
-    {
-      role: 'assistant',
-      content: {
-        intro: 'Done! Your webapp is live and ready to use. 🎉',
-        tasks: [
-          {
-            title: 'Patient Lookup Webapp',
-            inputs: ['trial_candidates_scored'],
-            outputs: [],
-            description: '<strong>Public URL:</strong><br><a href="#" style="color:#28a9dd;text-decoration:none;">http://release-14-design.qa-deployments.dku.sh/projects/PATIENTCOHORT/webapps/bGnJv5A_patient-lookup/view</a><br><br>• Reader authorization configured for <span style="color:#28a9dd">trial_candidates_scored</span><br>• No authentication required for internal access'
-          }
-        ],
-        footer: 'Coordinators can now search for any patient and see their full enrollment profile. Want me to add any additional features?'
+        footer: 'Everything is connected and will automatically update when source data changes. Want me to set up any alerts or sharing permissions?',
+        action: {
+          type: 'goToFlow'
+        }
       }
     }
   ],
 
+  // Flow step definitions for progressive reveal
+  flowSteps: {
+    sources: {
+      nodes: [
+        'zone__default__dataset__PATIENTCOHORT_46_lab__results__2025__sf',
+        'zone__default__dataset__PATIENTCOHORT_46_patient__demographics__sf',
+        'zone__default__dataset__PATIENTCOHORT_46_clinical__notes__raw__sf'
+      ],
+      edges: []
+    },
+    parse: {
+      nodes: [
+        'zone__default__recipe__compute__lab__results__2025__sf__parsed',
+        'zone__default__dataset__PATIENTCOHORT_46_lab__results__2025__sf__parsed',
+        'zone__default__recipe__compute__clinical__notes__parsed__sf',
+        'zone__default__dataset__PATIENTCOHORT_46_clinical__notes__parsed__sf'
+      ],
+      edges: ['edge3', 'edge4', 'edge7', 'edge8']
+    },
+    mostRecent: {
+      nodes: [
+        'zone__default__recipe__compute__lab__results__2025__most__recent__sf',
+        'zone__default__dataset__PATIENTCOHORT_46_lab__results__2025__most__recent__sf',
+        'zone__default__recipe__compute__clinical__notes__most__recent__per__patient__sf',
+        'zone__default__dataset__PATIENTCOHORT_46_clinical__notes__most__recent__per__patient__sf'
+      ],
+      edges: ['edge1', 'edge2', 'edge5', 'edge6']
+    },
+    join: {
+      nodes: [
+        'zone__default__recipe__compute__patient__all__data__joined__sf',
+        'zone__default__dataset__PATIENTCOHORT_46_patient__all__data__joined__sf'
+      ],
+      edges: ['edge9', 'edge10', 'edge11', 'edge12']
+    },
+    ai: {
+      nodes: [
+        'zone__default__recipe__compute__patient__all__data__joined__sf__generated',
+        'zone__default__dataset__PATIENTCOHORT_46_patient__all__data__joined__sf__generated'
+      ],
+      edges: ['edge13', 'edge14']
+    },
+    model: {
+      nodes: [
+        'zone__default__recipe__prediction__training__session__s2WvxHHJ__Predict__enrollment__success',
+        'zone__default__model__Predict__enrollment__success__40_binary__41_'
+      ],
+      edges: ['edge15', 'edge16']
+    },
+    scored: {
+      nodes: [
+        'zone__default__recipe__prediction__scoring__Predict__enrollment__success',
+        'zone__default__dataset__PATIENTCOHORT_46_patient__all__data__joined__sf__scored'
+      ],
+      edges: ['edge17', 'edge18', 'edge19']
+    }
+  },
+
   // Timing settings
-  typingSpeed: 25,        // slightly faster for longer demo
-  aiResponseDelay: 1000   // a bit more pause for realism
+  typingSpeed: 25,
+  aiResponseDelay: 1000
 };
 
-console.log('[FakeChat] Clinical Trial Demo config loaded with', window.fakeChatConfig.conversation.length, 'messages');
+console.log('[FakeChat] Clinical Trial Pipeline config loaded with', window.fakeChatConfig.conversation.length, 'messages');

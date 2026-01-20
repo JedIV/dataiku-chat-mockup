@@ -285,10 +285,71 @@
   // ============================================
   // ACTION HANDLERS
   // ============================================
+
+  // Track which flow steps have been revealed
+  window.fakeChatState.revealedSteps = window.fakeChatState.revealedSteps || [];
+
+  function hideAllFlowElements() {
+    // Hide all nodes
+    document.querySelectorAll('g[id^="zone__"]').forEach(function(el) {
+      el.style.display = 'none';
+    });
+    // Hide all edges
+    document.querySelectorAll('g[id^="edge"]').forEach(function(el) {
+      el.style.display = 'none';
+    });
+  }
+
+  function revealFlowStep(stepName) {
+    var config = window.fakeChatConfig;
+    var state = window.fakeChatState;
+
+    if (!config.flowSteps || !config.flowSteps[stepName]) {
+      console.log('[FakeChat] Unknown flow step: ' + stepName);
+      return;
+    }
+
+    // Add this step to revealed steps if not already there
+    if (state.revealedSteps.indexOf(stepName) === -1) {
+      state.revealedSteps.push(stepName);
+    }
+
+    // If this is the first step, hide everything first
+    if (state.revealedSteps.length === 1) {
+      hideAllFlowElements();
+    }
+
+    // Reveal all steps that have been triggered so far
+    state.revealedSteps.forEach(function(step) {
+      var stepConfig = config.flowSteps[step];
+      if (!stepConfig) return;
+
+      // Show nodes for this step
+      (stepConfig.nodes || []).forEach(function(nodeId) {
+        var node = document.getElementById(nodeId);
+        if (node) node.style.display = '';
+      });
+
+      // Show edges for this step
+      (stepConfig.edges || []).forEach(function(edgeId) {
+        var edge = document.getElementById(edgeId);
+        if (edge) edge.style.display = '';
+      });
+    });
+
+    console.log('[FakeChat] Revealed flow step: ' + stepName + ' (total: ' + state.revealedSteps.join(', ') + ')');
+  }
+
   function executeAction(action) {
     if (!action || !action.type) return;
 
     try {
+      // Handle revealFlowStep without needing Angular
+      if (action.type === 'revealFlowStep') {
+        revealFlowStep(action.step);
+        return;
+      }
+
       var injector = window.angular && angular.element(document.body).injector();
       if (!injector) {
         console.log('[FakeChat] Angular not available for action');
@@ -396,10 +457,42 @@
 
   fakeChat.reset = function() {
     window.fakeChatState.conversationIndex = 0;
+    window.fakeChatState.revealedSteps = [];
     document.querySelectorAll('.fake-message, .fake-typing-indicator').forEach(function(el) {
       el.remove();
     });
+    // Show all flow elements again
+    document.querySelectorAll('g[id^="zone__"]').forEach(function(el) {
+      el.style.display = '';
+    });
+    document.querySelectorAll('g[id^="edge"]').forEach(function(el) {
+      el.style.display = '';
+    });
     console.log('[FakeChat] Conversation reset');
+  };
+
+  // Initialize flow to starting state (only source datasets visible)
+  fakeChat.initFlow = function() {
+    window.fakeChatState.revealedSteps = [];
+    hideAllFlowElements();
+    revealFlowStep('sources');
+    console.log('[FakeChat] Flow initialized to starting state');
+  };
+
+  // Expose revealFlowStep for manual testing
+  fakeChat.revealStep = function(stepName) {
+    revealFlowStep(stepName);
+  };
+
+  // Show all flow elements
+  fakeChat.showAllFlow = function() {
+    document.querySelectorAll('g[id^="zone__"]').forEach(function(el) {
+      el.style.display = '';
+    });
+    document.querySelectorAll('g[id^="edge"]').forEach(function(el) {
+      el.style.display = '';
+    });
+    console.log('[FakeChat] All flow elements visible');
   };
 
   // ============================================
@@ -519,5 +612,8 @@
   console.log('  Ctrl+Shift+N - Advance to next message');
   console.log('  Ctrl+Shift+T - Toggle fake/real mode');
   console.log('  Ctrl+Shift+R - Reset conversation');
+  console.log('  fakeChat.initFlow() - Initialize flow to starting state');
+  console.log('  fakeChat.showAllFlow() - Show all flow elements');
+  console.log('  fakeChat.revealStep(name) - Reveal a specific flow step');
 
 })();
