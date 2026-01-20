@@ -134,6 +134,72 @@
     return html;
   }
 
+  function buildBarChart(chart) {
+    var barColor = chart.color || '#5B8BD4';
+    var chartHeight = 130;
+    var data = chart.data || [];
+    var maxValue = Math.max.apply(null, data.map(function(d) { return d.value; }));
+    var niceMax = Math.ceil(maxValue / 10) * 10;
+
+    var html = '<div style="background:' + COLORS.taskBg + ';border-radius:8px;padding:14px;margin-bottom:12px;border:1px solid ' + COLORS.taskBorder + ';">';
+
+    // Title - scientific style
+    if (chart.title) {
+      html += '<div style="font-weight:600;color:#333;margin-bottom:10px;font-size:12px;font-family:Helvetica Neue,Arial,sans-serif;">' + chart.title + '</div>';
+    }
+
+    // Chart container with Y-axis
+    html += '<div style="display:flex;font-family:Courier New,monospace;">';
+
+    // Y-axis labels
+    html += '<div style="display:flex;flex-direction:column;justify-content:space-between;height:' + chartHeight + 'px;margin-right:8px;font-size:9px;color:#666;">';
+    html += '<span>' + niceMax + '</span>';
+    html += '<span>' + Math.round(niceMax * 0.75) + '</span>';
+    html += '<span>' + Math.round(niceMax * 0.5) + '</span>';
+    html += '<span>' + Math.round(niceMax * 0.25) + '</span>';
+    html += '<span>0</span>';
+    html += '</div>';
+
+    // Plot area
+    html += '<div style="flex:1;display:flex;flex-direction:column;">';
+
+    // Grid background (ggplot style)
+    html += '<div style="position:relative;height:' + chartHeight + 'px;background:#EBEBEB;border:1px solid #bbb;">';
+
+    // Horizontal grid lines
+    for (var g = 1; g < 4; g++) {
+      html += '<div style="position:absolute;left:0;right:0;top:' + (g * 25) + '%;border-top:1px solid #fff;"></div>';
+    }
+
+    // Bars container
+    html += '<div style="position:absolute;bottom:0;left:0;right:0;top:0;display:flex;align-items:flex-end;justify-content:space-evenly;padding:0 4px;">';
+    data.forEach(function(item) {
+      var pct = (item.value / niceMax) * 100;
+      var color = item.color || barColor;
+      html += '<div style="flex:1;max-width:32px;height:' + pct + '%;background:' + color + ';margin:0 2px;border:1px solid rgba(0,0,0,0.15);box-sizing:border-box;"></div>';
+    });
+    html += '</div>';
+    html += '</div>';
+
+    // X-axis labels
+    html += '<div style="display:flex;justify-content:space-evenly;padding-top:4px;border-top:1px solid #666;font-size:9px;color:#333;">';
+    data.forEach(function(item) {
+      html += '<span style="flex:1;max-width:32px;text-align:center;margin:0 2px;">' + item.label + '</span>';
+    });
+    html += '</div>';
+
+    html += '</div>'; // plot area
+    html += '</div>'; // chart container
+
+    // Unit annotation
+    if (chart.unit) {
+      html += '<div style="font-size:9px;color:#888;margin-top:4px;font-family:Courier New,monospace;text-align:right;">n = ' + chart.unit + '</div>';
+    }
+
+    html += '</div>';
+    return html;
+  }
+
   function buildPlanSection(content) {
     if (!content.tasks || !content.tasks.length) return '';
 
@@ -184,6 +250,17 @@
       fragment.appendChild(planContainer);
     }
 
+    // Bar chart
+    if (content.chart) {
+      var chartContainer = document.createElement('div');
+      chartContainer.className = 'flow-assistant-message-container fake-message';
+      var chartMessage = document.createElement('div');
+      chartMessage.className = 'flow-assistant-chat-message__assistant';
+      chartMessage.innerHTML = buildBarChart(content.chart);
+      chartContainer.appendChild(chartMessage);
+      fragment.appendChild(chartContainer);
+    }
+
     return fragment;
   }
 
@@ -203,6 +280,59 @@
 
     container.appendChild(inner);
     return container;
+  }
+
+  // ============================================
+  // ACTION HANDLERS
+  // ============================================
+  function executeAction(action) {
+    if (!action || !action.type) return;
+
+    try {
+      var injector = window.angular && angular.element(document.body).injector();
+      if (!injector) {
+        console.log('[FakeChat] Angular not available for action');
+        return;
+      }
+
+      var $state = injector.get('$state');
+      var projectKey = $state.params.projectKey || 'PATIENTCOHORT';
+
+      switch (action.type) {
+        case 'openDataset':
+          if (action.dataset) {
+            $state.go('projects.project.datasets.dataset.explore', {
+              projectKey: projectKey,
+              datasetName: action.dataset
+            });
+            console.log('[FakeChat] Opened dataset: ' + action.dataset);
+          }
+          break;
+
+        case 'openStatistics':
+          if (action.dataset) {
+            $state.go('projects.project.datasets.dataset.statistics', {
+              projectKey: projectKey,
+              datasetName: action.dataset
+            });
+            console.log('[FakeChat] Opened statistics: ' + action.dataset);
+          }
+          break;
+
+        case 'goToFlow':
+          $state.go('projects.project.flow', {
+            projectKey: projectKey,
+            zoneId: action.zoneId || 'default'
+          });
+          console.log('[FakeChat] Returned to flow');
+          break;
+
+        default:
+          console.log('[FakeChat] Unknown action type: ' + action.type);
+      }
+    } catch (e) {
+      console.log('[FakeChat] Action error:', e);
+    }
   }
 
   // ============================================
@@ -249,7 +379,14 @@
       await sleep(config.aiResponseDelay);
 
       typing.remove();
-      chatContainer.appendChild(createAssistantMessage(current.content || {}));
+      var content = current.content || {};
+      chatContainer.appendChild(createAssistantMessage(content));
+
+      // Execute any associated action
+      if (content.action) {
+        await sleep(500); // Brief pause before action
+        executeAction(content.action);
+      }
     }
 
     scrollToBottom();
@@ -344,6 +481,30 @@
     }
   }
 
+  function setupTitle() {
+    // Change "Flow Assistant" title to custom title
+    var customTitle = config.panelTitle || 'Patient Cohort Analysis';
+
+    function updateTitle() {
+      var titleEl = document.querySelector('.flow-assistant-title span');
+      if (titleEl && titleEl.textContent.trim() === 'Flow Assistant') {
+        titleEl.textContent = customTitle;
+        console.log('[FakeChat] Title updated to: ' + customTitle);
+        return true;
+      }
+      return false;
+    }
+
+    // Try immediately
+    updateTitle();
+
+    // Keep watching for panel recreation (after navigation)
+    var observer = new MutationObserver(function() {
+      updateTitle();
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+  }
+
   // ============================================
   // INITIALIZE
   // ============================================
@@ -352,6 +513,7 @@
   setupHotkeys();
   setupNewTaskHook();
   setupLayoutFixes();
+  setupTitle();
 
   console.log('[FakeChat] Ready! (' + config.conversation.length + ' messages loaded)');
   console.log('  Ctrl+Shift+N - Advance to next message');

@@ -38,9 +38,25 @@ window.fakeChatConfig = {
     {
       role: 'assistant',
       content: {
-        intro: 'Here\'s what I found: the median age is <strong>58 years</strong>. About 70% of patients fall between 45 and 72, which aligns well with typical Phase III oncology trial criteria. This looks like a solid foundation for your enrollment dataset.',
+        intro: 'Here\'s what I found: the median age is <strong>58 years</strong>. About 70% of patients fall between 45 and 72, which aligns well with typical Phase III oncology trial criteria.',
+        chart: {
+          title: 'Age Distribution',
+          unit: '%',
+          data: [
+            { label: '18-34', value: 8 },
+            { label: '35-44', value: 12 },
+            { label: '45-54', value: 22 },
+            { label: '55-64', value: 28 },
+            { label: '65-72', value: 20 },
+            { label: '73+', value: 10 }
+          ]
+        },
         tasks: [],
-        footer: 'Would you like me to find related datasets with lab results and clinical notes?'
+        footer: 'Would you like me to find related datasets with lab results and clinical notes?',
+        action: {
+          type: 'openDataset',
+          dataset: 'patient_demographics_sf'
+        }
       }
     },
 
@@ -252,6 +268,28 @@ window.fakeChatConfig = {
       }
     },
 
+    // Summary offer
+    {
+      role: 'assistant',
+      content: {
+        intro: 'Would you like me to add a summary of the steps we performed to the project description? This can help other team members understand the pipeline at a glance.',
+        tasks: [],
+        footer: ''
+      }
+    },
+    {
+      role: 'user',
+      text: 'Yes, add a summary.'
+    },
+    {
+      role: 'assistant',
+      content: {
+        intro: 'Done! I\'ve updated the project description with a narrative summary of the pipeline we built—how we joined the datasets, used the LLM to extract clinical entities, trained the enrollment model, and set up automation.',
+        tasks: [],
+        footer: 'Is there anything else you\'d like to add to the project?'
+      }
+    },
+
     // Request webapp
     {
       role: 'user',
@@ -308,7 +346,7 @@ window.fakeChatConfig = {
             title: 'Patient Lookup Webapp',
             inputs: ['trial_candidates_scored'],
             outputs: [],
-            description: '<strong>Public URL:</strong><br><a href="#" style="color:#28a9dd;text-decoration:none;">http://release-14-design.qa-deployments.dku.sh/webapps/PATIENTCOHORT/bGnJv5A/view</a><br><br>• Reader authorization configured for <span style="color:#28a9dd">trial_candidates_scored</span><br>• No authentication required for internal access'
+            description: '<strong>Public URL:</strong><br><a href="#" style="color:#28a9dd;text-decoration:none;">http://release-14-design.qa-deployments.dku.sh/projects/PATIENTCOHORT/webapps/bGnJv5A_patient-lookup/view</a><br><br>• Reader authorization configured for <span style="color:#28a9dd">trial_candidates_scored</span><br>• No authentication required for internal access'
           }
         ],
         footer: 'Coordinators can now search for any patient and see their full enrollment profile. Want me to add any additional features?'

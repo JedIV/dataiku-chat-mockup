@@ -47,6 +47,7 @@ Scripts target these Dataiku selectors:
 - `.object-right-column-summary` - Summary column
 - `.text-to-flow-scrollable-section` - Flow generation panel
 - `.flow-assistant-container` - Flow Assistant main container
+- `.flow-assistant-title span` - Flow Assistant panel title text
 - `.flow-assistant-scrollable-section` - Flow Assistant message area
 - `.flow-assistant-chat-container` - Flow Assistant chat container
 - `.flow-assistant-message-container` - Individual message wrapper
