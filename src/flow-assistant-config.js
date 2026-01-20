@@ -395,14 +395,14 @@ window.fakeChatConfig = {
     },
     model: {
       nodes: [
-        'zone__default__recipe__prediction__training__session__s2WvxHHJ__Predict__enrollment__success',
-        'zone__default__model__Predict__enrollment__success__40_binary__41_'
+        'zone__default__recipe__train__Predict__enrollment__success____binary__',
+        'zone__default__savedmodel__PATIENTCOHORT_46_Lwq3ieVN'
       ],
       edges: ['edge15', 'edge16']
     },
     scored: {
       nodes: [
-        'zone__default__recipe__prediction__scoring__Predict__enrollment__success',
+        'zone__default__recipe__score__patient__all__data__joined__sf',
         'zone__default__dataset__PATIENTCOHORT_46_patient__all__data__joined__sf__scored'
       ],
       edges: ['edge17', 'edge18', 'edge19']

@@ -57,11 +57,18 @@
   // ============================================
   // STATE
   // ============================================
-  window.fakeChatState = {
+  // Preserve state across script re-runs
+  window.fakeChatState = window.fakeChatState || {
     fakeMode: true,
     conversationIndex: 0,
-    isTyping: false
+    isTyping: false,
+    revealedSteps: [],
+    renderedMessages: [] // Store HTML of rendered messages for restoration
   };
+  // Ensure all state properties exist
+  var state = window.fakeChatState;
+  if (!state.renderedMessages) state.renderedMessages = [];
+  if (!state.revealedSteps) state.revealedSteps = [];
 
   // ============================================
   // HELPERS
@@ -283,20 +290,55 @@
   }
 
   // ============================================
-  // ACTION HANDLERS
+  // FLOW VISIBILITY HELPERS
   // ============================================
 
-  // Track which flow steps have been revealed
-  window.fakeChatState.revealedSteps = window.fakeChatState.revealedSteps || [];
+  function openFlowAssistantPanel() {
+    var icon = document.querySelector('.dku-icon-stars-circle-fill-24');
+    var bubble = icon && icon.closest('.right-panel__bubble');
+    if (bubble && !bubble.classList.contains('right-panel__bubble--active')) {
+      bubble.click();
+      return true;
+    }
+    return !!bubble;
+  }
 
-  function hideAllFlowElements() {
-    // Hide all nodes
+  // Core function to set visibility of all flow elements
+  function setAllFlowElementsVisible(visible) {
+    var display = visible ? '' : 'none';
     document.querySelectorAll('g[id^="zone__"]').forEach(function(el) {
-      el.style.display = 'none';
+      el.style.display = display;
     });
-    // Hide all edges
     document.querySelectorAll('g[id^="edge"]').forEach(function(el) {
-      el.style.display = 'none';
+      el.style.display = display;
+    });
+  }
+
+  // Show specific nodes and edges by ID
+  function showFlowElements(nodeIds, edgeIds) {
+    (nodeIds || []).forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.style.display = '';
+    });
+    (edgeIds || []).forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.style.display = '';
+    });
+  }
+
+  // Apply current revealed steps to the flow
+  function applyFlowState() {
+    var config = window.fakeChatConfig;
+    var state = window.fakeChatState;
+
+    if (!config.flowSteps || !state.revealedSteps.length) return;
+
+    setAllFlowElementsVisible(false);
+    state.revealedSteps.forEach(function(step) {
+      var stepConfig = config.flowSteps[step];
+      if (stepConfig) {
+        showFlowElements(stepConfig.nodes, stepConfig.edges);
+      }
     });
   }
 
@@ -309,35 +351,13 @@
       return;
     }
 
-    // Add this step to revealed steps if not already there
+    // Add this step if not already revealed
     if (state.revealedSteps.indexOf(stepName) === -1) {
       state.revealedSteps.push(stepName);
     }
 
-    // If this is the first step, hide everything first
-    if (state.revealedSteps.length === 1) {
-      hideAllFlowElements();
-    }
-
-    // Reveal all steps that have been triggered so far
-    state.revealedSteps.forEach(function(step) {
-      var stepConfig = config.flowSteps[step];
-      if (!stepConfig) return;
-
-      // Show nodes for this step
-      (stepConfig.nodes || []).forEach(function(nodeId) {
-        var node = document.getElementById(nodeId);
-        if (node) node.style.display = '';
-      });
-
-      // Show edges for this step
-      (stepConfig.edges || []).forEach(function(edgeId) {
-        var edge = document.getElementById(edgeId);
-        if (edge) edge.style.display = '';
-      });
-    });
-
-    console.log('[FakeChat] Revealed flow step: ' + stepName + ' (total: ' + state.revealedSteps.join(', ') + ')');
+    applyFlowState();
+    console.log('[FakeChat] Revealed: ' + state.revealedSteps.join(', '));
   }
 
   function executeAction(action) {
@@ -359,6 +379,15 @@
       var $state = injector.get('$state');
       var projectKey = $state.params.projectKey || 'PATIENTCOHORT';
 
+      // Schedule panel reopen after navigation
+      function reopenPanelAfterNav() {
+        setTimeout(function() {
+          openFlowAssistantPanel();
+          // Also restore flow state if going back to flow
+          setTimeout(restoreFlowState, 500);
+        }, 1000);
+      }
+
       switch (action.type) {
         case 'openDataset':
           if (action.dataset) {
@@ -367,6 +396,7 @@
               datasetName: action.dataset
             });
             console.log('[FakeChat] Opened dataset: ' + action.dataset);
+            reopenPanelAfterNav();
           }
           break;
 
@@ -377,6 +407,7 @@
               datasetName: action.dataset
             });
             console.log('[FakeChat] Opened statistics: ' + action.dataset);
+            reopenPanelAfterNav();
           }
           break;
 
@@ -386,6 +417,7 @@
             zoneId: action.zoneId || 'default'
           });
           console.log('[FakeChat] Returned to flow');
+          reopenPanelAfterNav();
           break;
 
         default:
@@ -399,6 +431,47 @@
   // ============================================
   // CORE FUNCTIONS
   // ============================================
+
+  // Restore conversation messages from state after navigation
+  function restoreConversation() {
+    var state = window.fakeChatState;
+    if (!state.renderedMessages || state.renderedMessages.length === 0) return;
+
+    // Make sure panel is open first
+    openFlowAssistantPanel();
+
+    // Wait a bit for panel to be ready
+    setTimeout(function() {
+      var chatContainer = getChatContainer();
+      if (!chatContainer) return;
+
+      // Check if messages are already in DOM
+      if (chatContainer.querySelector('.fake-message')) return;
+
+      // Re-inject all stored messages
+      state.renderedMessages.forEach(function(html) {
+        var wrapper = document.createElement('div');
+        wrapper.innerHTML = html;
+        while (wrapper.firstChild) {
+          var child = wrapper.firstChild;
+          child.setAttribute('data-stored', 'true');
+          chatContainer.appendChild(child);
+        }
+      });
+
+      scrollToBottom();
+      console.log('[FakeChat] Restored ' + state.renderedMessages.length + ' messages');
+    }, 200);
+  }
+
+  // Restore flow visibility state after navigation
+  function restoreFlowState() {
+    if (window.fakeChatState.revealedSteps.length > 0) {
+      applyFlowState();
+      console.log('[FakeChat] Restored flow state');
+    }
+  }
+
   fakeChat.advance = async function() {
     var state = window.fakeChatState;
     var config = window.fakeChatConfig;
@@ -430,7 +503,11 @@
         cmContent.textContent = '';
       }
 
-      chatContainer.appendChild(createUserMessage(current.text));
+      var userMsg = createUserMessage(current.text);
+      userMsg.setAttribute('data-stored', 'true');
+      chatContainer.appendChild(userMsg);
+      // Store rendered message for restoration
+      state.renderedMessages.push(userMsg.outerHTML);
     } else {
       // Show typing indicator, then response
       var typing = createTypingIndicator();
@@ -441,7 +518,18 @@
 
       typing.remove();
       var content = current.content || {};
-      chatContainer.appendChild(createAssistantMessage(content));
+      var assistantMsg = createAssistantMessage(content);
+      chatContainer.appendChild(assistantMsg);
+
+      // Store rendered messages for restoration (fragment has multiple children)
+      var tempDiv = document.createElement('div');
+      tempDiv.appendChild(assistantMsg.cloneNode(true));
+      // assistantMsg is a fragment, need to get the actual elements from chatContainer
+      var newMessages = chatContainer.querySelectorAll('.fake-message:not([data-stored])');
+      newMessages.forEach(function(msg) {
+        state.renderedMessages.push(msg.outerHTML);
+        msg.setAttribute('data-stored', 'true');
+      });
 
       // Execute any associated action
       if (content.action) {
@@ -458,25 +546,48 @@
   fakeChat.reset = function() {
     window.fakeChatState.conversationIndex = 0;
     window.fakeChatState.revealedSteps = [];
+    window.fakeChatState.renderedMessages = [];
     document.querySelectorAll('.fake-message, .fake-typing-indicator').forEach(function(el) {
       el.remove();
     });
     // Show all flow elements again
-    document.querySelectorAll('g[id^="zone__"]').forEach(function(el) {
-      el.style.display = '';
-    });
-    document.querySelectorAll('g[id^="edge"]').forEach(function(el) {
-      el.style.display = '';
-    });
+    setAllFlowElementsVisible(true);
     console.log('[FakeChat] Conversation reset');
   };
 
   // Initialize flow to starting state (only source datasets visible)
   fakeChat.initFlow = function() {
     window.fakeChatState.revealedSteps = [];
-    hideAllFlowElements();
+    openFlowAssistantPanel();
+    setAllFlowElementsVisible(false);
     revealFlowStep('sources');
     console.log('[FakeChat] Flow initialized to starting state');
+  };
+
+  // Open the Flow Assistant panel
+  fakeChat.openPanel = function() {
+    openFlowAssistantPanel();
+  };
+
+  // Auto-run through all conversation steps
+  fakeChat.autoRun = async function(delayBetweenSteps) {
+    var delay = delayBetweenSteps || 2000;
+    var config = window.fakeChatConfig;
+    var state = window.fakeChatState;
+
+    // Reset and initialize
+    fakeChat.reset();
+    await sleep(500);
+    fakeChat.initFlow();
+    await sleep(1000);
+
+    // Run through each conversation step
+    while (state.conversationIndex < config.conversation.length) {
+      await fakeChat.advance();
+      await sleep(delay);
+    }
+
+    console.log('[FakeChat] Auto-run complete!');
   };
 
   // Expose revealFlowStep for manual testing
@@ -486,12 +597,7 @@
 
   // Show all flow elements
   fakeChat.showAllFlow = function() {
-    document.querySelectorAll('g[id^="zone__"]').forEach(function(el) {
-      el.style.display = '';
-    });
-    document.querySelectorAll('g[id^="edge"]').forEach(function(el) {
-      el.style.display = '';
-    });
+    setAllFlowElementsVisible(true);
     console.log('[FakeChat] All flow elements visible');
   };
 
@@ -577,23 +683,53 @@
   function setupTitle() {
     // Change "Flow Assistant" title to custom title
     var customTitle = config.panelTitle || 'Patient Cohort Analysis';
+    var lastPanelCheck = 0;
 
-    function updateTitle() {
+    function updateTitleAndRestore() {
       var titleEl = document.querySelector('.flow-assistant-title span');
       if (titleEl && titleEl.textContent.trim() === 'Flow Assistant') {
         titleEl.textContent = customTitle;
         console.log('[FakeChat] Title updated to: ' + customTitle);
+
+        // Panel was just recreated, restore conversation after a brief delay
+        setTimeout(function() {
+          restoreConversation();
+        }, 100);
+
         return true;
       }
       return false;
     }
 
+    function checkFlowAndRestore() {
+      // Only check once per second max to avoid performance issues
+      var now = Date.now();
+      if (now - lastPanelCheck < 1000) return;
+      lastPanelCheck = now;
+
+      // Check if we're on the flow page and need to restore flow state
+      var flowSvg = document.querySelector('svg.flow-zone-graph');
+      if (flowSvg && window.fakeChatState.revealedSteps.length > 0) {
+        // Check if any revealed element is currently hidden (meaning we need to restore)
+        var firstStep = window.fakeChatState.revealedSteps[0];
+        var stepConfig = window.fakeChatConfig.flowSteps && window.fakeChatConfig.flowSteps[firstStep];
+        if (stepConfig && stepConfig.nodes && stepConfig.nodes[0]) {
+          var testNode = document.getElementById(stepConfig.nodes[0]);
+          if (testNode && testNode.style.display !== 'none') {
+            // Flow is showing everything, need to restore proper state
+            restoreFlowState();
+          }
+        }
+      }
+    }
+
     // Try immediately
-    updateTitle();
+    updateTitleAndRestore();
 
     // Keep watching for panel recreation (after navigation)
     var observer = new MutationObserver(function() {
-      updateTitle();
+      updateTitleAndRestore();
+      checkFlowAndRestore();
     });
     observer.observe(document.body, { childList: true, subtree: true });
   }
@@ -612,7 +748,9 @@
   console.log('  Ctrl+Shift+N - Advance to next message');
   console.log('  Ctrl+Shift+T - Toggle fake/real mode');
   console.log('  Ctrl+Shift+R - Reset conversation');
+  console.log('  fakeChat.autoRun(delay) - Auto-run through all steps');
   console.log('  fakeChat.initFlow() - Initialize flow to starting state');
+  console.log('  fakeChat.openPanel() - Open Flow Assistant panel');
   console.log('  fakeChat.showAllFlow() - Show all flow elements');
   console.log('  fakeChat.revealStep(name) - Reveal a specific flow step');
 
