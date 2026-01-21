@@ -51,7 +51,10 @@
   var CSS = [
     '@keyframes typingBounce{0%,80%,100%{transform:scale(0.8);opacity:0.4}40%{transform:scale(1);opacity:1}}',
     '.fake-message{animation:fadeInUp 0.3s ease-out}',
-    '@keyframes fadeInUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}'
+    '@keyframes fadeInUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}',
+    // Hide all flow elements by default when fake mode is active
+    'body.fake-chat-active g[id^="zone__"]{display:none}',
+    'body.fake-chat-active g[id^="edge"]{display:none}'
   ].join('');
 
   // ============================================
@@ -314,15 +317,25 @@
     });
   }
 
-  // Show specific nodes and edges by ID
+  // Show specific nodes and edges by ID (use !important to override CSS)
   function showFlowElements(nodeIds, edgeIds) {
     (nodeIds || []).forEach(function(id) {
       var el = document.getElementById(id);
-      if (el) el.style.display = '';
+      if (el) el.style.setProperty('display', 'block', 'important');
     });
     (edgeIds || []).forEach(function(id) {
       var el = document.getElementById(id);
-      if (el) el.style.display = '';
+      if (el) el.style.setProperty('display', 'block', 'important');
+    });
+  }
+
+  // Clear all inline display styles (let CSS handle hiding)
+  function clearInlineDisplayStyles() {
+    document.querySelectorAll('g[id^="zone__"]').forEach(function(el) {
+      el.style.removeProperty('display');
+    });
+    document.querySelectorAll('g[id^="edge"]').forEach(function(el) {
+      el.style.removeProperty('display');
     });
   }
 
@@ -333,7 +346,8 @@
 
     if (!config.flowSteps || !state.revealedSteps.length) return;
 
-    setAllFlowElementsVisible(false);
+    // Clear inline styles, let CSS hide everything, then show revealed steps
+    clearInlineDisplayStyles();
     state.revealedSteps.forEach(function(step) {
       var stepConfig = config.flowSteps[step];
       if (stepConfig) {
@@ -420,6 +434,17 @@
           reopenPanelAfterNav();
           break;
 
+        case 'openRecipe':
+          if (action.recipe) {
+            $state.go('projects.project.recipes.recipe', {
+              projectKey: projectKey,
+              recipeName: action.recipe
+            });
+            console.log('[FakeChat] Opened recipe: ' + action.recipe);
+            reopenPanelAfterNav();
+          }
+          break;
+
         default:
           console.log('[FakeChat] Unknown action type: ' + action.type);
       }
@@ -445,8 +470,8 @@
       var chatContainer = getChatContainer();
       if (!chatContainer) return;
 
-      // Check if messages are already in DOM
-      if (chatContainer.querySelector('.fake-message')) return;
+      // Check if messages are already in DOM or if advance is in progress
+      if (chatContainer.querySelector('.fake-message') || chatContainer.querySelector('.fake-typing-indicator')) return;
 
       // Re-inject all stored messages
       state.renderedMessages.forEach(function(html) {
@@ -550,17 +575,18 @@
     document.querySelectorAll('.fake-message, .fake-typing-indicator').forEach(function(el) {
       el.remove();
     });
-    // Show all flow elements again
-    setAllFlowElementsVisible(true);
+    // Initialize flow to starting state (only patient_demographics visible)
+    clearInlineDisplayStyles();
+    revealFlowStep('initial');
     console.log('[FakeChat] Conversation reset');
   };
 
-  // Initialize flow to starting state (only source datasets visible)
+  // Initialize flow to starting state (only patient_demographics visible from semantic search)
   fakeChat.initFlow = function() {
     window.fakeChatState.revealedSteps = [];
     openFlowAssistantPanel();
-    setAllFlowElementsVisible(false);
-    revealFlowStep('sources');
+    clearInlineDisplayStyles();
+    revealFlowStep('initial');
     console.log('[FakeChat] Flow initialized to starting state');
   };
 
@@ -608,6 +634,9 @@
     var indicator = document.getElementById('fake-chat-indicator');
     if (indicator) return;
 
+    // Add class to body for CSS-based flow hiding
+    document.body.classList.add('fake-chat-active');
+
     indicator = document.createElement('div');
     indicator.id = 'fake-chat-indicator';
     indicator.style.cssText = 'position:fixed;top:60px;right:20px;padding:6px 12px;border-radius:4px;font-size:11px;font-weight:600;font-family:-apple-system,sans-serif;z-index:10000;cursor:pointer;background:#ff6b6b;color:#fff;';
@@ -617,6 +646,14 @@
       state.fakeMode = !state.fakeMode;
       indicator.textContent = state.fakeMode ? 'FAKE MODE' : 'REAL MODE';
       indicator.style.background = state.fakeMode ? '#ff6b6b' : '#51cf66';
+      // Toggle CSS class for flow hiding
+      if (state.fakeMode) {
+        document.body.classList.add('fake-chat-active');
+        applyFlowState(); // Re-apply flow state when switching back to fake mode
+      } else {
+        document.body.classList.remove('fake-chat-active');
+        setAllFlowElementsVisible(true); // Show all when in real mode
+      }
     };
     document.body.appendChild(indicator);
   }
@@ -634,7 +671,8 @@
     if (window.fakeChatHotkeysAdded) return;
 
     document.addEventListener('keydown', function(e) {
-      if (!e.ctrlKey || !e.shiftKey) return;
+      // Support both Ctrl (Windows/Linux) and Cmd (Mac)
+      if (!(e.ctrlKey || e.metaKey) || !e.shiftKey) return;
 
       var key = e.key.toLowerCase();
       if (key === 'n') {
