@@ -155,7 +155,30 @@
 
     // Hide feature cards when chatting
     var cards = document.querySelector('.lovable-cards-container');
-    if (cards) cards.style.display = 'none';
+    if (cards) {
+      cards.style.display = 'none';
+      cards.setAttribute('data-hidden-by-fake', 'true');
+    }
+
+    // Hide welcome heading and subtitle
+    var heading = document.evaluate(
+      "//*[contains(text(),'Welcome to Dataiku')]",
+      document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null
+    ).singleNodeValue;
+    if (heading) {
+      var parent = heading.parentElement;
+      if (parent) {
+        parent.style.display = 'none';
+        parent.setAttribute('data-hidden-by-fake', 'true');
+      }
+    }
+
+    // Also hide the custom subtitle
+    var subtitle = document.querySelector('.custom-subtitle');
+    if (subtitle) {
+      subtitle.style.display = 'none';
+      subtitle.setAttribute('data-hidden-by-fake', 'true');
+    }
   }
 
   function showRealContent() {

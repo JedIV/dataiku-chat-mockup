@@ -131,8 +131,7 @@
     '[class*="page-header"]',
     '.banner-section',
     '[class*="catalog-header"]',
-    '[class*="breadcrumb"]',
-    'button[type="submit"]'
+    '[class*="breadcrumb"]'
   ]);
 
   // Remove data-catalog-page-header element
@@ -287,66 +286,126 @@
   }
 
   // ============================================
-  // 5. Style Search Box (Lovable-style)
+  // 5. Style Chat Input Area (clean, modern look)
   // ============================================
-  const searchInput = $('textarea, input[placeholder*="Search"]');
-  const form = searchInput?.closest('form');
 
-  if (form) {
-    applyStyles(form, {
+  // Style the main chat input container - wide ChatGPT-style
+  const chatInputContainer = $('.data-catalog-semantic-search__chat-input');
+  if (chatInputContainer) {
+    applyStyles(chatInputContainer, {
+      background: 'white',
+      border: `1px solid ${CONFIG.colors.border}`,
+      borderRadius: '24px',
+      boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
+      padding: '12px 20px',
+      width: '100%',
+      maxWidth: '900px',
+      margin: '32px auto 0',
+      boxSizing: 'border-box'
+    });
+  }
+
+  // Style the form inside - make it horizontal layout
+  const chatForm = $('.data-catalog-semantic-search__chat-input form') || $('.chat-input__container') || $('form');
+  if (chatForm) {
+    applyStyles(chatForm, {
       background: 'transparent',
       boxShadow: 'none',
       padding: '0',
-      border: 'none'
+      border: 'none',
+      display: 'flex',
+      flexDirection: 'row',
+      alignItems: 'flex-end',
+      gap: '12px'
     });
   }
 
-  if (searchInput && !$('.lovable-search-wrapper')) {
-    const wrapper = document.createElement('div');
-    wrapper.className = 'lovable-search-wrapper';
-    applyStyles(wrapper, {
-      position: 'relative',
-      width: '100%',
-      maxWidth: '600px',
-      margin: '0 auto',
-      height: '44px'
-    });
-
-    const iconWrapper = document.createElement('div');
-    iconWrapper.innerHTML = ICONS.search;
-    applyStyles(iconWrapper, {
-      position: 'absolute',
-      left: '14px',
-      top: '50%',
-      transform: 'translateY(-50%)',
-      pointerEvents: 'none',
-      display: 'flex',
-      alignItems: 'center',
-      height: '20px'
-    });
-
-    searchInput.parentElement.insertBefore(wrapper, searchInput);
-    wrapper.appendChild(iconWrapper);
-    wrapper.appendChild(searchInput);
-
+  // Style the textarea
+  const searchInput = $('.chat-input__textarea') || $('textarea');
+  if (searchInput) {
     applyStyles(searchInput, {
-      width: '100%',
-      height: '44px',
-      minHeight: '44px',
-      maxHeight: '44px',
-      padding: '0 16px 0 44px',
-      border: `1px solid ${CONFIG.colors.border}`,
-      borderRadius: '8px',
+      flex: '1',
+      width: 'auto',
+      minHeight: '24px',
+      maxHeight: '120px',
+      padding: '0',
+      border: 'none',
+      borderRadius: '0',
       fontSize: '15px',
-      background: 'white',
+      background: 'transparent',
       outline: 'none',
-      boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-      lineHeight: '44px',
-      overflow: 'hidden'
+      boxShadow: 'none',
+      lineHeight: '1.5',
+      resize: 'none',
+      fontFamily: '"Source Sans Pro", -apple-system, sans-serif',
+      color: CONFIG.colors.text.primary
     });
     searchInput.placeholder = 'What do you want to do?';
-    searchInput.rows = 1;
   }
+
+  // Style the actions container
+  const actionsDiv = $('.chat-input__actions');
+  if (actionsDiv) {
+    applyStyles(actionsDiv, {
+      marginTop: '0',
+      display: 'flex',
+      alignItems: 'center'
+    });
+  }
+
+  // Hide the existing submit button and create a custom one
+  const existingSubmitBtn = $('button[type="submit"]');
+  if (existingSubmitBtn) {
+    existingSubmitBtn.style.display = 'none';
+  }
+
+  // Create custom send button if it doesn't exist
+  if (!$('.custom-send-btn')) {
+    const customBtn = document.createElement('button');
+    customBtn.className = 'custom-send-btn';
+    customBtn.type = 'button';
+    applyStyles(customBtn, {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      width: '40px',
+      height: '40px',
+      borderRadius: '50%',
+      border: 'none',
+      background: CONFIG.colors.text.accent,
+      cursor: 'pointer',
+      transition: 'background 0.15s, transform 0.15s',
+      flexShrink: '0',
+      marginLeft: 'auto'
+    });
+
+    // Up arrow SVG icon
+    customBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg>`;
+
+    customBtn.onmouseenter = () => {
+      customBtn.style.background = '#008f85';
+      customBtn.style.transform = 'scale(1.05)';
+    };
+    customBtn.onmouseleave = () => {
+      customBtn.style.background = CONFIG.colors.text.accent;
+      customBtn.style.transform = 'scale(1)';
+    };
+
+    // Click handler - trigger the hidden submit button
+    customBtn.onclick = () => {
+      if (existingSubmitBtn) existingSubmitBtn.click();
+    };
+
+    // Add to form
+    if (chatForm) {
+      chatForm.appendChild(customBtn);
+    }
+  }
+
+  // Hide the search icon that's built into the input (we'll use cleaner look)
+  $$('.chat-input__icon, .data-catalog-semantic-search__chat-input svg:not(button svg)').forEach(el => {
+    el.style.display = 'none';
+  });
 
   // ============================================
   // 6. Fix Content Layout (left-align for search results)
