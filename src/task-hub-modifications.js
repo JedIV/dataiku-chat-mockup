@@ -28,10 +28,17 @@
     },
     textReplacements: [
       { from: 'Find the data you need', to: 'Welcome to Dataiku' },
-      { from: 'Data Catalog', to: 'Task Hub' },
       { from: 'AI Search', to: 'Dataiku Agent' },
       { from: 'NEW SEARCH', to: 'NEW TASK' }
     ],
+    // Left nav configuration
+    leftNav: {
+      hideSubItems: true,  // Hide Data Catalog sub-items
+      addItems: [
+        { text: 'Agent Hub', after: 'Dataiku Apps' },
+        { text: 'Governance', after: 'Agent Hub' }
+      ]
+    },
     cards: [
       {
         icon: 'bot',
@@ -128,6 +135,18 @@
     'button[type="submit"]'
   ]);
 
+  // Remove data-catalog-page-header element
+  const catalogHeader = document.querySelector('data-catalog-page-header');
+  if (catalogHeader) catalogHeader.remove();
+
+  // Remove right panel
+  const rightPanel = document.querySelector('div.right-panel');
+  if (rightPanel) rightPanel.remove();
+
+  // Remove global finder nav box
+  const globalFinderNavBox = document.querySelector('.global-finder-nav-box');
+  if (globalFinderNavBox) globalFinderNavBox.remove();
+
   // Hide blue header bar (but keep main nav)
   $$('div').forEach(el => {
     const bg = getComputedStyle(el).backgroundColor;
@@ -157,7 +176,70 @@
   }
 
   // ============================================
-  // 4. Style Heading
+  // 4. Modify Left Navigation
+  // ============================================
+
+  // Hide all sub-items in left panel (they have class 'left-panel-subitem')
+  $$('.left-panel-subitem').forEach(item => {
+    item.style.display = 'none';
+  });
+
+  // Change highlight from current selection to Home
+  $$('.left-panel-item').forEach(item => {
+    const text = item.textContent.trim();
+    // Remove highlight from all items
+    item.classList.remove('left-panel-item--selected');
+    item.style.color = '';
+    item.style.fontWeight = '';
+
+    // Add highlight to Home
+    if (text === 'Home') {
+      item.classList.add('left-panel-item--selected');
+      item.style.color = CONFIG.colors.text.accent;
+      item.style.fontWeight = '600';
+    }
+  });
+
+  // Add new nav items: Agent Hub and Governance
+  if (!document.querySelector('.custom-nav-agent-hub')) {
+    // Find "Dataiku Apps" element
+    let dataikuAppsEl = null;
+    $$('.left-panel-item').forEach(el => {
+      if (el.textContent.trim() === 'Dataiku Apps') {
+        dataikuAppsEl = el;
+      }
+    });
+
+    if (dataikuAppsEl) {
+      const container = dataikuAppsEl.closest('.left-panel-container') || dataikuAppsEl.parentElement;
+
+      // Styles matching native nav items
+      const navItemStyle = 'padding: 4px 8px 4px 16px; display: flex; align-items: center; height: 32px; font-size: 16px; font-weight: 400; font-family: SourceSansPro; line-height: 20px; color: rgb(68, 68, 68); text-decoration: none; margin: 0; box-sizing: content-box;';
+
+      // Create Agent Hub nav item
+      const agentHubItem = document.createElement('a');
+      agentHubItem.className = 'a--no-style left-panel-item custom-nav-agent-hub';
+      agentHubItem.textContent = 'Agent Hub';
+      agentHubItem.href = '#';
+      agentHubItem.style.cssText = navItemStyle;
+      agentHubItem.onclick = (e) => e.preventDefault();
+
+      // Create Governance nav item
+      const governanceItem = document.createElement('a');
+      governanceItem.className = 'a--no-style left-panel-item custom-nav-governance';
+      governanceItem.textContent = 'Governance';
+      governanceItem.href = '#';
+      governanceItem.style.cssText = navItemStyle;
+      governanceItem.onclick = (e) => e.preventDefault();
+
+      // Insert after Dataiku Apps
+      dataikuAppsEl.after(agentHubItem);
+      agentHubItem.after(governanceItem);
+    }
+  }
+
+  // ============================================
+  // 5. Style Heading
   // ============================================
   const headingEl = document.evaluate(
     "//*[contains(text(),'Welcome to Dataiku')]",
