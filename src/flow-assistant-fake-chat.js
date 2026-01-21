@@ -630,34 +630,6 @@
   // ============================================
   // UI SETUP
   // ============================================
-  function setupModeIndicator() {
-    var indicator = document.getElementById('fake-chat-indicator');
-    if (indicator) return;
-
-    // Add class to body for CSS-based flow hiding
-    document.body.classList.add('fake-chat-active');
-
-    indicator = document.createElement('div');
-    indicator.id = 'fake-chat-indicator';
-    indicator.style.cssText = 'position:fixed;top:60px;right:20px;padding:6px 12px;border-radius:4px;font-size:11px;font-weight:600;font-family:-apple-system,sans-serif;z-index:10000;cursor:pointer;background:#ff6b6b;color:#fff;';
-    indicator.textContent = 'FAKE MODE';
-    indicator.onclick = function() {
-      var state = window.fakeChatState;
-      state.fakeMode = !state.fakeMode;
-      indicator.textContent = state.fakeMode ? 'FAKE MODE' : 'REAL MODE';
-      indicator.style.background = state.fakeMode ? '#ff6b6b' : '#51cf66';
-      // Toggle CSS class for flow hiding
-      if (state.fakeMode) {
-        document.body.classList.add('fake-chat-active');
-        applyFlowState(); // Re-apply flow state when switching back to fake mode
-      } else {
-        document.body.classList.remove('fake-chat-active');
-        setAllFlowElementsVisible(true); // Show all when in real mode
-      }
-    };
-    document.body.appendChild(indicator);
-  }
-
   function setupStyles() {
     if (document.getElementById('fake-chat-styles')) return;
 
@@ -680,7 +652,16 @@
         fakeChat.advance();
       } else if (key === 't') {
         e.preventDefault();
-        document.getElementById('fake-chat-indicator').click();
+        var state = window.fakeChatState;
+        state.fakeMode = !state.fakeMode;
+        console.log('[FakeChat] Mode: ' + (state.fakeMode ? 'FAKE' : 'REAL'));
+        if (state.fakeMode) {
+          document.body.classList.add('fake-chat-active');
+          applyFlowState();
+        } else {
+          document.body.classList.remove('fake-chat-active');
+          setAllFlowElementsVisible(true);
+        }
       } else if (key === 'r') {
         e.preventDefault();
         fakeChat.reset();
@@ -775,7 +756,9 @@
   // ============================================
   // INITIALIZE
   // ============================================
-  setupModeIndicator();
+  // Add class to body for CSS-based flow hiding
+  document.body.classList.add('fake-chat-active');
+
   setupStyles();
   setupHotkeys();
   setupNewTaskHook();

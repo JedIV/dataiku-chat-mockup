@@ -481,9 +481,10 @@
       container.appendChild(card);
     });
 
-    const formEl = $('form');
-    if (formEl?.parentElement) {
-      formEl.parentElement.appendChild(container);
+    // Insert cards after the chat input container, not inside it
+    const chatInputEl = $('.data-catalog-semantic-search__chat-input');
+    if (chatInputEl) {
+      chatInputEl.insertAdjacentElement('afterend', container);
     }
   }
 
@@ -505,7 +506,8 @@
   // Watch for textarea to appear and style it (for SPA lazy loading)
   const observer = new MutationObserver((mutations) => {
     const textarea = $('textarea');
-    if (textarea && !$('.lovable-search-wrapper')) {
+    // Check if styles have been applied by looking for our custom send button
+    if (textarea && !$('.custom-send-btn')) {
       // Textarea appeared but not yet styled - apply styles
       applyLovableStyles();
     }

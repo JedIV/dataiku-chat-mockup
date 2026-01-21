@@ -294,28 +294,6 @@
   // ============================================
   // UI SETUP
   // ============================================
-  function setupModeIndicator() {
-    var indicator = document.getElementById('home-chat-indicator');
-    if (indicator) return;
-
-    indicator = document.createElement('div');
-    indicator.id = 'home-chat-indicator';
-    indicator.style.cssText = 'position:fixed;top:60px;right:20px;padding:6px 12px;border-radius:4px;font-size:11px;font-weight:600;font-family:-apple-system,sans-serif;z-index:10000;cursor:pointer;background:#ff6b6b;color:#fff;';
-    indicator.textContent = 'FAKE MODE';
-    indicator.onclick = function() {
-      state.fakeMode = !state.fakeMode;
-      indicator.textContent = state.fakeMode ? 'FAKE MODE' : 'REAL MODE';
-      indicator.style.background = state.fakeMode ? '#ff6b6b' : '#51cf66';
-
-      if (!state.fakeMode) {
-        // Switching to real mode - show real content, hide fake
-        showRealContent();
-        clearFakeMessages();
-      }
-    };
-    document.body.appendChild(indicator);
-  }
-
   function setupStyles() {
     if (document.getElementById('home-chat-styles')) return;
 
@@ -337,7 +315,12 @@
         homeChat.advance();
       } else if (key === 't') {
         e.preventDefault();
-        document.getElementById('home-chat-indicator').click();
+        state.fakeMode = !state.fakeMode;
+        console.log('[HomeChat] Mode: ' + (state.fakeMode ? 'FAKE' : 'REAL'));
+        if (!state.fakeMode) {
+          showRealContent();
+          clearFakeMessages();
+        }
       } else if (key === 'r') {
         e.preventDefault();
         homeChat.reset();
@@ -378,7 +361,6 @@
   // ============================================
   // INITIALIZE
   // ============================================
-  setupModeIndicator();
   setupStyles();
   setupHotkeys();
   setupFormIntercept();
