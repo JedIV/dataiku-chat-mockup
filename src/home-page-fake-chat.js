@@ -101,7 +101,7 @@
     group.style.cssText = 'display: flex; justify-content: flex-end; margin-bottom: 12px;';
 
     var message = document.createElement('div');
-    message.style.cssText = 'background: #e8f4f3; color: #1a1a1a; padding: 12px 16px; border-radius: 16px 16px 4px 16px; max-width: 70%; font-size: 14px; line-height: 1.5; box-shadow: 0 1px 2px rgba(0,0,0,0.05);';
+    message.style.cssText = 'background: rgba(237, 171, 79, 0.4); color: #1A1A1A; padding: 12px 16px; border-radius: 16px 16px 4px 16px; max-width: 70%; font-size: 14px; line-height: 1.5; box-shadow: 0 1px 2px rgba(0,0,0,0.05);';
     message.textContent = text;
 
     group.appendChild(message);
@@ -114,7 +114,7 @@
     group.style.cssText = 'display: flex; justify-content: flex-start; margin-bottom: 12px;';
 
     var message = document.createElement('div');
-    message.style.cssText = 'background: #ffffff; color: #333; padding: 12px 16px; border-radius: 16px 16px 16px 4px; max-width: 70%; font-size: 14px; line-height: 1.5; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);';
+    message.style.cssText = 'background: #FEFEF9; color: #1A1A1A; padding: 12px 16px; border-radius: 16px 16px 16px 4px; max-width: 70%; font-size: 14px; line-height: 1.5; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);';
 
     // Parse markdown-like formatting (bold)
     var text = content.text || '';
@@ -162,7 +162,7 @@
 
     // Hide welcome heading and subtitle
     var heading = document.evaluate(
-      "//*[contains(text(),'Welcome to Dataiku')]",
+      "//*[contains(text(),'What are we building today')]",
       document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null
     ).singleNodeValue;
     if (heading) {

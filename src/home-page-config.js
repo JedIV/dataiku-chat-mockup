@@ -59,13 +59,13 @@ window.homePageChatConfig = {
       content: {
         text: `I found a dataset that looks perfect for your analysis:
 
-<div style="background: #f8f9fa; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; margin: 12px 0;">
+<div style="background: #F8F4E4; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; margin: 12px 0;">
   <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
     <div>
       <div style="font-weight: 600; color: #1a1a1a; font-size: 15px;">patient_demographics</div>
       <div style="font-size: 12px; color: #666; margin-top: 2px;">Owner: data_team • Updated 2 days ago</div>
     </div>
-    <div style="background: #e8f4f3; color: #00a89c; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;">RECOMMENDED</div>
+    <div style="background: #C7FFF1; color: #3EDAB2; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;">RECOMMENDED</div>
   </div>
 
   <div style="display: flex; gap: 24px; margin-bottom: 12px;">
@@ -85,13 +85,13 @@ window.homePageChatConfig = {
 
   <div style="margin-bottom: 8px; font-size: 12px; color: #666;">Age Distribution</div>
   <div style="display: flex; align-items: flex-end; gap: 2px; height: 32px;">
-    <div style="flex: 1; background: #00a89c; height: 40%; border-radius: 2px 2px 0 0;"></div>
-    <div style="flex: 1; background: #00a89c; height: 65%; border-radius: 2px 2px 0 0;"></div>
-    <div style="flex: 1; background: #00a89c; height: 100%; border-radius: 2px 2px 0 0;"></div>
-    <div style="flex: 1; background: #00a89c; height: 85%; border-radius: 2px 2px 0 0;"></div>
-    <div style="flex: 1; background: #00a89c; height: 70%; border-radius: 2px 2px 0 0;"></div>
-    <div style="flex: 1; background: #00a89c; height: 45%; border-radius: 2px 2px 0 0;"></div>
-    <div style="flex: 1; background: #00a89c; height: 25%; border-radius: 2px 2px 0 0;"></div>
+    <div style="flex: 1; background: #1A1A1A; height: 40%; border-radius: 2px 2px 0 0;"></div>
+    <div style="flex: 1; background: #1A1A1A; height: 65%; border-radius: 2px 2px 0 0;"></div>
+    <div style="flex: 1; background: #1A1A1A; height: 100%; border-radius: 2px 2px 0 0;"></div>
+    <div style="flex: 1; background: #1A1A1A; height: 85%; border-radius: 2px 2px 0 0;"></div>
+    <div style="flex: 1; background: #1A1A1A; height: 70%; border-radius: 2px 2px 0 0;"></div>
+    <div style="flex: 1; background: #1A1A1A; height: 45%; border-radius: 2px 2px 0 0;"></div>
+    <div style="flex: 1; background: #1A1A1A; height: 25%; border-radius: 2px 2px 0 0;"></div>
   </div>
   <div style="display: flex; justify-content: space-between; font-size: 10px; color: #999; margin-top: 2px;">
     <span>18</span><span>35</span><span>50</span><span>65</span><span>80+</span>
@@ -114,7 +114,7 @@ Would you like me to create a Flow using this dataset?`
     {
       role: 'assistant',
       content: {
-        text: 'I\'ve created a new project called <strong>Patient Cohort Analysis</strong> with the patient_demographics dataset. I\'ve set up an initial Flow to help you explore and filter the data. <a href="#" style="color: #00a89c;">Open project →</a>'
+        text: 'I\'ve created a new project called <strong>Patient Cohort Analysis</strong> with the patient_demographics dataset. I\'ve set up an initial Flow to help you explore and filter the data. <a href="#" style="color: #3EDAB2;">Open project →</a>'
       }
     }
   ]
