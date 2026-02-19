@@ -157,13 +157,13 @@ window.ChatConfig = {
         statusLines: [
           { icon: '⟳', text: 'Creating recipe: compute_lab_results_2025_sf_parsed', color: '#888', action: { type: 'goToFlow' } },
           { icon: '⟳', text: 'Creating recipe: compute_clinical_notes_parsed_sf', color: '#888' },
-          { icon: '✓', text: 'Created dataset lab_results_2025_sf_parsed', color: '#00a89c' },
-          { icon: '✓', text: 'Created dataset clinical_notes_parsed_sf', color: '#00a89c' },
+          { icon: '✓', text: 'Created dataset lab_results_2025_sf_parsed', color: '#3EDAB2' },
+          { icon: '✓', text: 'Created dataset clinical_notes_parsed_sf', color: '#3EDAB2' },
           { icon: '⟳', text: 'Computing most recent records per patient...', color: '#888' },
-          { icon: '✓', text: 'Created dataset lab_results_2025_most_recent_sf', color: '#00a89c' },
-          { icon: '✓', text: 'Created dataset clinical_notes_most_recent_per_patient_sf', color: '#00a89c' },
+          { icon: '✓', text: 'Created dataset lab_results_2025_most_recent_sf', color: '#3EDAB2' },
+          { icon: '✓', text: 'Created dataset clinical_notes_most_recent_per_patient_sf', color: '#3EDAB2' },
           { icon: '⟳', text: 'Joining 3 datasets on patient_id...', color: '#888' },
-          { icon: '✓', text: 'Created dataset patient_all_data_joined_sf', color: '#00a89c' }
+          { icon: '✓', text: 'Created dataset patient_all_data_joined_sf', color: '#3EDAB2' }
         ],
         flowSteps: ['parse', 'join'],
         completionText: 'Pipeline complete! We now have **12,400 unified patient records** combining demographics, lab values, and clinical observations.'
@@ -195,7 +195,7 @@ window.ChatConfig = {
           role: 'assistant',
           text: 'You\'re right — LDL Cholesterol of zero indicates missing or bad data from the lab feed. I\'ll add a filter to the lab results parsing step to exclude those records.',
           statusLines: [
-            { icon: '✓', text: 'Added filter: LDL_Cholesterol > 0 to compute_lab_results_2025_sf_parsed', color: '#00a89c' }
+            { icon: '✓', text: 'Added filter: LDL_Cholesterol > 0 to compute_lab_results_2025_sf_parsed', color: '#3EDAB2' }
           ],
           followUp: 'Let me show you the updated recipe...',
           action: { type: 'openRecipe', recipe: 'compute_lab_results_2025_sf_parsed' }
@@ -219,7 +219,7 @@ window.ChatConfig = {
         statusLines: [
           { icon: '⟳', text: 'Configuring LLM prompt template...', color: '#888' },
           { icon: '⟳', text: 'Running AI enrichment on 12,400 records...', color: '#888' },
-          { icon: '✓', text: 'Created dataset patient_all_data_joined_sf_generated', color: '#00a89c' }
+          { icon: '✓', text: 'Created dataset patient_all_data_joined_sf_generated', color: '#3EDAB2' }
         ],
         flowSteps: ['ai'],
         completionText: 'AI enrichment complete! We now have structured eligibility data for all 12,400 patients. With this enriched dataset, we can train a model to predict which patients are most likely to successfully enroll in the trial. Should I build an enrollment prediction model?'
@@ -244,7 +244,7 @@ window.ChatConfig = {
           { icon: '⟳', text: 'Training Random Forest...', color: '#888' },
           { icon: '⟳', text: 'Training XGBoost...', color: '#888' },
           { icon: '⟳', text: 'Evaluating model performance...', color: '#888' },
-          { icon: '✓', text: 'Best model: Random Forest — 87% accuracy', color: '#00a89c' }
+          { icon: '✓', text: 'Best model: Random Forest — 87% accuracy', color: '#3EDAB2' }
         ],
         flowSteps: ['model'],
         completionText: 'Model training complete! The best performer is a **Random Forest** with **87% accuracy** on the holdout set.',
@@ -279,7 +279,7 @@ window.ChatConfig = {
         statusLines: [
           { icon: '⟳', text: 'Deploying model to scoring pipeline...', color: '#888' },
           { icon: '⟳', text: 'Scoring 12,400 patient records...', color: '#888' },
-          { icon: '✓', text: 'Created dataset patient_all_data_joined_sf_scored', color: '#00a89c' }
+          { icon: '✓', text: 'Created dataset patient_all_data_joined_sf_scored', color: '#3EDAB2' }
         ],
         flowSteps: ['scored'],
         completionText: 'Your pipeline is complete. The scored dataset is ready for your enrollment coordinators — they can sort by likelihood and focus outreach on the highest-probability patients.'
@@ -337,7 +337,7 @@ window.ChatConfig = {
           { icon: '⟳', text: 'Generating webapp scaffold...', color: '#888' },
           { icon: '⟳', text: 'Connecting to scored dataset API...', color: '#888' },
           { icon: '⟳', text: 'Building patient lookup interface...', color: '#888' },
-          { icon: '✓', text: 'Webapp deployed: Patient Screening App', color: '#00a89c' }
+          { icon: '✓', text: 'Webapp deployed: Patient Screening App', color: '#3EDAB2' }
         ],
         flowSteps: [],
         completionText: 'Your webapp is ready! Clinical screeners can access it at the link below. The app is connected to your pipeline and will use the latest model predictions.',
@@ -364,12 +364,12 @@ window.ChatConfig = {
         statusLines: [
           { icon: '⟳', text: 'Creating agent: Enrollment Status...', color: '#888' },
           { icon: '⟳', text: 'Configuring knowledge sources: scored dataset, model features, pipeline docs...', color: '#888' },
-          { icon: '✓', text: 'Agent created: Enrollment Status', color: '#00a89c', action: { type: 'openAgent', modelId: 'RGqjivfB', versionId: 'S-PATIENTCOHORT-RGqjivfB-v1' } },
+          { icon: '✓', text: 'Agent created: Enrollment Status', color: '#3EDAB2', action: { type: 'openAgent', modelId: 'RGqjivfB', versionId: 'S-PATIENTCOHORT-RGqjivfB-v1' } },
           { icon: '⟳', text: 'Connecting to Slack workspace...', color: '#888' },
           { icon: '⟳', text: 'Authenticating with enterprise SSO...', color: '#888' },
-          { icon: '✓', text: 'Slack integration active: #trial-enrollment channel', color: '#00a89c' },
+          { icon: '✓', text: 'Slack integration active: #trial-enrollment channel', color: '#3EDAB2' },
           { icon: '⟳', text: 'Sending introduction to Marcus...', color: '#888' },
-          { icon: '✓', text: 'Message delivered to @marcus.chen', color: '#00a89c' }
+          { icon: '✓', text: 'Message delivered to @marcus.chen', color: '#3EDAB2' }
         ],
         flowSteps: ['agent'],
         completionText: 'Done. The Enrollment Status agent is live in Slack. It just introduced itself to Marcus — he can ask it about patient scores, enrollment predictions, or pipeline status anytime.',

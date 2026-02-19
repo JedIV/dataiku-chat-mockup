@@ -5,29 +5,29 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --bg: #fafbfc;
-  --bg-alt: #f3f3f3;
-  --text: #1a1a1a;
-  --text-secondary: #666;
-  --accent: #00a89c;
-  --accent-hover: #009088;
-  --dataset: #28a9dd;
+  --bg: #FEFEF9;
+  --bg-alt: #F8F4E4;
+  --text: #1A1A1A;
+  --text-secondary: #42485B;
+  --accent: #3EDAB2;
+  --accent-hover: #06312E;
+  --dataset: #7092F2;
   --border: #e5e7eb;
-  --user-bg: #f0f0f0;
-  --plan-bg: #f8f9fb;
+  --user-bg: #F8F4E4;
+  --plan-bg: #F8F4E4;
   --plan-border: #d1d5db;
-  --approve-bg: #00a89c;
-  --approve-hover: #009088;
-  --navy: #2C3A47;
+  --approve-bg: #3EDAB2;
+  --approve-hover: #06312E;
+  --navy: #06312E;
   --gray-100: #f5f6f7;
   --gray-200: #e8eaed;
   --gray-300: #d1d5db;
   --gray-400: #9ca3af;
   --gray-500: #6b7280;
-  --orange: #F59E0B;
-  --green: #10B981;
-  --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-mono: 'SF Mono', 'Fira Code', 'Fira Mono', Menlo, monospace;
+  --orange: #EDAB4F;
+  --green: #3EDAB2;
+  --font: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'DM Mono', 'SF Mono', 'Fira Code', Menlo, monospace;
 }
 
 html, body {
@@ -73,7 +73,8 @@ html, body {
 
 .cobuild-title {
   font-size: 15px;
-  font-weight: 700;
+  font-weight: 600;
+  font-family: 'Spectral', serif;
   color: var(--navy);
 }
 
@@ -438,10 +439,10 @@ html, body {
 
 .pill {
   display: inline;
-  color: var(--dataset);
+  color: #42485B;
   font-weight: 500;
   cursor: pointer;
-  border-bottom: 1px dashed var(--dataset);
+  border-bottom: 1px dashed #42485B;
   transition: opacity 0.15s;
 }
 
@@ -482,7 +483,7 @@ html, body {
   flex-shrink: 0;
   width: 22px;
   height: 22px;
-  background: var(--accent);
+  background: #06312E;
   color: #fff;
   border-radius: 50%;
   display: flex;
@@ -549,7 +550,7 @@ html, body {
 /* ── Task cards ── */
 
 .task-card {
-  background: #f8f9fa;
+  background: #F8F4E4;
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 14px 16px;
@@ -558,7 +559,7 @@ html, body {
 
 .task-card .task-title {
   font-weight: 600;
-  color: var(--accent);
+  color: #06312E;
   font-size: 13px;
   margin-bottom: 6px;
 }
@@ -601,7 +602,7 @@ html, body {
 
 .chart-bar {
   flex: 1;
-  background: #c8ddf0;
+  background: #1A1A1A;
   border-left: 1px solid rgba(255,255,255,0.6);
   cursor: pointer;
   transition: background 0.12s;
@@ -614,7 +615,7 @@ html, body {
 }
 
 .chart-bar:hover {
-  background: #8bb8e0;
+  background: #42485B;
 }
 
 .chart-bar:hover .chart-tooltip {

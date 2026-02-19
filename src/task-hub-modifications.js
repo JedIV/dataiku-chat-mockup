@@ -38,7 +38,7 @@
       border: '#e5e7eb'
     },
     textReplacements: [
-      { from: 'Find the data you need', to: 'What are we building today, Sarah?' },
+      { from: 'Find the data you need', to: 'What are we building today, Steph?' },
       { from: 'AI Search', to: 'Dataiku Agent' },
       { from: 'NEW SEARCH', to: 'NEW TASK' }
     ],
@@ -218,8 +218,9 @@
     // Add highlight to Home
     if (text === 'Home') {
       item.classList.add('left-panel-item--selected');
-      item.style.color = CONFIG.colors.text.accent;
-      item.style.fontWeight = '600';
+      item.style.backgroundColor = '#1A1A1A';
+      item.style.color = '#FEFEF9';
+      item.style.fontWeight = '500';
     }
   });
 
@@ -260,6 +261,50 @@
       agentHubItem.after(governanceItem);
     }
   }
+
+  // ============================================
+  // 4b. Style Left Nav Panel + Master Nav Bar
+  // ============================================
+
+  // Fix left panel background to warm off-white, no border
+  const leftPanelSection = document.querySelector('.left-panel-section');
+  if (leftPanelSection) {
+    leftPanelSection.style.backgroundColor = '#FEFEF9';
+    leftPanelSection.style.borderRight = 'none';
+  }
+
+  // Fix master nav bar to Core Black
+  const masterNav = document.querySelector('.master-nav');
+  if (masterNav) {
+    masterNav.style.backgroundColor = '#1A1A1A';
+  }
+
+  // Hide section separator line
+  $$('.left-panel-separator').forEach(el => el.style.display = 'none');
+
+  // Apply Roboto font + brand colors + tighter spacing to all nav items
+  $$('.left-panel-item').forEach(item => {
+    const text = item.textContent.trim();
+
+    // Hide app-specific items
+    if (text === 'Parameters Analyzer' || text === 'Manufacturing Events Tracker') {
+      item.style.display = 'none';
+      return;
+    }
+
+    item.style.fontFamily = "'Roboto', sans-serif";
+    item.style.fontSize = '14px';
+    item.style.letterSpacing = '0.01em';
+    item.style.height = '26px';
+    item.style.padding = '2px 8px 2px 16px';
+
+    if (!item.classList.contains('left-panel-item--selected')) {
+      item.style.color = '#42485B';
+    }
+  });
+
+  // Tighten container padding
+  $$('.left-panel-container').forEach(c => c.style.padding = '4px 0px');
 
   // ============================================
   // 5. Style Heading + Logo

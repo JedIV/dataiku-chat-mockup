@@ -40,7 +40,10 @@
   var CSS = [
     '@keyframes typingBounce{0%,80%,100%{transform:scale(0.8);opacity:0.4}40%{transform:scale(1);opacity:1}}',
     '.fake-message{animation:fadeInUp 0.3s ease-out}',
-    '@keyframes fadeInUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}'
+    '@keyframes fadeInUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}',
+    '@keyframes fadeIn{from{opacity:0}to{opacity:1}}',
+    '.fake-thinking-line{animation:fadeIn 0.25s ease-out}',
+    '.fake-workstream-card{animation:fadeInUp 0.4s ease-out}'
   ].join('');
 
   // ============================================
@@ -101,7 +104,7 @@
     group.style.cssText = 'display: flex; justify-content: flex-end; margin-bottom: 12px;';
 
     var message = document.createElement('div');
-    message.style.cssText = 'background: rgba(237, 171, 79, 0.4); color: #1A1A1A; padding: 12px 16px; border-radius: 16px 16px 4px 16px; max-width: 70%; font-size: 14px; line-height: 1.5; box-shadow: 0 1px 2px rgba(0,0,0,0.05);';
+    message.style.cssText = 'background: #F8F4E4; color: #1A1A1A; padding: 12px 16px; border-radius: 16px 16px 4px 16px; max-width: 70%; font-size: 14px; line-height: 1.5; box-shadow: 0 1px 2px rgba(0,0,0,0.05);';
     message.textContent = text;
 
     group.appendChild(message);
@@ -114,7 +117,7 @@
     group.style.cssText = 'display: flex; justify-content: flex-start; margin-bottom: 12px;';
 
     var message = document.createElement('div');
-    message.style.cssText = 'background: #FEFEF9; color: #1A1A1A; padding: 12px 16px; border-radius: 16px 16px 16px 4px; max-width: 70%; font-size: 14px; line-height: 1.5; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);';
+    message.style.cssText = 'background: #FEFEF9; color: #1A1A1A; padding: 12px 16px; border-radius: 16px 16px 16px 4px; max-width: 85%; font-size: 14px; line-height: 1.5; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);';
 
     // Parse markdown-like formatting (bold)
     var text = content.text || '';
@@ -141,6 +144,154 @@
 
     group.appendChild(message);
     return group;
+  }
+
+  // ============================================
+  // THINKING BLOCK + WORKSTREAM CARD BUILDERS
+  // ============================================
+  function createThinkingBlock(lines) {
+    var block = document.createElement('div');
+    block.className = 'fake-thinking-block';
+    block.style.cssText = 'background: #F8F4E4; border: 1px solid #e5e7eb; border-radius: 8px; padding: 10px 14px; margin-bottom: 12px;';
+
+    // Header row
+    var header = document.createElement('div');
+    header.style.cssText = 'display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none;';
+
+    var chevron = document.createElement('span');
+    chevron.className = 'fake-thinking-chevron';
+    chevron.style.cssText = 'font-family: "DM Mono", monospace; font-size: 12px; color: #42485B; transition: transform 0.2s;';
+    chevron.textContent = '\u25BE';
+
+    var label = document.createElement('span');
+    label.className = 'fake-thinking-label';
+    label.style.cssText = 'font-family: "DM Mono", monospace; font-size: 12px; color: #42485B; font-weight: 400;';
+    label.textContent = '\u2726 Thinking...';
+
+    header.appendChild(chevron);
+    header.appendChild(label);
+
+    // Body with reasoning lines
+    var body = document.createElement('div');
+    body.className = 'fake-thinking-body';
+    body.style.cssText = 'margin-top: 8px; padding-left: 4px;';
+
+    // Toggle behavior
+    header.addEventListener('click', function() {
+      var isVisible = body.style.display !== 'none';
+      body.style.display = isVisible ? 'none' : 'block';
+      chevron.textContent = isVisible ? '\u25B8' : '\u25BE';
+    });
+
+    block.appendChild(header);
+    block.appendChild(body);
+
+    return { block: block, body: body, header: header, chevron: chevron, label: label };
+  }
+
+  function createThinkingLine(text) {
+    var line = document.createElement('div');
+    line.className = 'fake-thinking-line';
+    line.style.cssText = 'font-family: "DM Mono", monospace; font-size: 12px; color: #42485B; opacity: 0.8; padding: 2px 0; line-height: 1.5;';
+    line.textContent = '\u2013 ' + text;
+    return line;
+  }
+
+  function createWorkstreamCard(card) {
+    var cardEl = document.createElement('div');
+    cardEl.className = 'fake-workstream-card';
+    cardEl.style.cssText = 'background: #F8F4E4; border-radius: 12px; border: 1px solid #e5e7eb; padding: 14px 16px; display: flex; gap: 12px; align-items: flex-start;';
+
+    var icon = document.createElement('div');
+    icon.style.cssText = 'font-size: 20px; line-height: 1; flex-shrink: 0; margin-top: 1px;';
+    icon.textContent = card.icon;
+
+    var textWrap = document.createElement('div');
+    textWrap.style.cssText = 'flex: 1; min-width: 0;';
+
+    var title = document.createElement('div');
+    title.style.cssText = 'font-weight: 600; font-size: 14px; color: #06312E; line-height: 1.3; margin-bottom: 4px;';
+    title.textContent = card.title;
+
+    var desc = document.createElement('div');
+    desc.style.cssText = 'font-size: 13px; color: #42485B; line-height: 1.4;';
+    desc.textContent = card.description;
+
+    textWrap.appendChild(title);
+    textWrap.appendChild(desc);
+    cardEl.appendChild(icon);
+    cardEl.appendChild(textWrap);
+
+    return cardEl;
+  }
+
+  // ============================================
+  // ANIMATED ASSISTANT SEQUENCE (thinking + cards)
+  // ============================================
+  async function advanceThinkingAndCards(container, content) {
+    // 1. Show typing indicator (800ms)
+    var typing = createTypingIndicator();
+    container.appendChild(typing);
+    scrollToBottom();
+    await sleep(config.aiResponseDelay);
+
+    // 2. Remove typing, create assistant bubble wrapper
+    typing.remove();
+
+    var group = document.createElement('div');
+    group.className = 'message-group fake-message';
+    group.style.cssText = 'display: flex; justify-content: flex-start; margin-bottom: 12px;';
+
+    var message = document.createElement('div');
+    message.style.cssText = 'background: #FEFEF9; color: #1A1A1A; padding: 12px 16px; border-radius: 16px 16px 16px 4px; max-width: 85%; font-size: 14px; line-height: 1.5; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.08);';
+
+    group.appendChild(message);
+    container.appendChild(group);
+
+    // 3. Show thinking block with header
+    var thinking = createThinkingBlock(content.thinking);
+    message.appendChild(thinking.block);
+    scrollToBottom();
+
+    // 4. Stream in reasoning lines one at a time (250ms each)
+    for (var i = 0; i < content.thinking.length; i++) {
+      var line = createThinkingLine(content.thinking[i]);
+      thinking.body.appendChild(line);
+      scrollToBottom();
+      await sleep(250);
+    }
+
+    // 5. Pause 1000ms
+    await sleep(1000);
+
+    // 6. Auto-collapse: hide body, update header
+    thinking.body.style.display = 'none';
+    thinking.chevron.textContent = '\u25B8';
+    thinking.label.textContent = '\u2726 Thought for 3s';
+    scrollToBottom();
+
+    // 7. Cards fade in one at a time (400ms stagger)
+    if (content.cards && content.cards.length > 0) {
+      var cardsContainer = document.createElement('div');
+      cardsContainer.style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px;';
+      message.appendChild(cardsContainer);
+
+      for (var j = 0; j < content.cards.length; j++) {
+        var card = createWorkstreamCard(content.cards[j]);
+        cardsContainer.appendChild(card);
+        scrollToBottom();
+        await sleep(400);
+      }
+    }
+
+    // 8. Footer text appears
+    if (content.text) {
+      var footer = document.createElement('div');
+      footer.style.cssText = 'margin-top: 4px; font-size: 14px; line-height: 1.5;';
+      footer.innerHTML = content.text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+      message.appendChild(footer);
+      scrollToBottom();
+    }
   }
 
   // ============================================
@@ -241,17 +392,25 @@
       var userMsg = createUserMessage(current.text);
       container.appendChild(userMsg);
     } else {
-      // Show typing indicator, then response
-      var typing = createTypingIndicator();
-      container.appendChild(typing);
-      scrollToBottom();
-
-      await sleep(config.aiResponseDelay);
-
-      typing.remove();
       var content = current.content || {};
-      var assistantMsg = createAssistantMessage(content);
-      container.appendChild(assistantMsg);
+
+      // Check if this is a thinking+cards message
+      if (content.thinking || content.cards) {
+        state.isTyping = true;
+        await advanceThinkingAndCards(container, content);
+        state.isTyping = false;
+      } else {
+        // Simple assistant message
+        var typing = createTypingIndicator();
+        container.appendChild(typing);
+        scrollToBottom();
+
+        await sleep(config.aiResponseDelay);
+
+        typing.remove();
+        var assistantMsg = createAssistantMessage(content);
+        container.appendChild(assistantMsg);
+      }
     }
 
     scrollToBottom();
