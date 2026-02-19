@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Patient Cohort Analysis</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="chat-shell">
+
+    <!-- Cobuild Header -->
+    <div class="cobuild-header">
+      <div class="cobuild-brand">
+        <div class="cobuild-logo">✦</div>
+        <div>
+          <div class="cobuild-title" id="chat-title">Dataiku Cobuild</div>
+          <div class="cobuild-subtitle" id="chat-subtitle">Patient Cohort Analysis</div>
+        </div>
+      </div>
+      <div class="cobuild-controls">
+        <div class="view-toggle" id="view-toggle" style="display:none;">
+          <button class="view-toggle-btn active" data-mode="stack">Stack</button>
+          <button class="view-toggle-btn" data-mode="split">Split</button>
+        </div>
+        <button class="new-chat-btn" id="new-chat-btn">
+          <span class="plus">+</span> New Chat
+        </button>
+      </div>
+    </div>
+
+    <!-- Chat Stack -->
+    <div class="chat-stack" id="chat-stack"></div>
+
+    <!-- Hotkey hint -->
+    <div class="hotkey-hint">Ctrl+Shift+N to advance | R to reset</div>
+  </div>
+
+  <script src="bridge.js"></script>
+  <script src="config.js"></script>
+  <script src="components.js"></script>
+  <script src="app.js"></script>
+
+  <!-- Live reload (dev only) -->
+  <script>
+    (function() {
+      var es = new EventSource('/__reload');
+      es.onmessage = function() { location.reload(); };
+      es.onerror = function() { setTimeout(function() { es.close(); }, 5000); };
+    })();
+  </script>
+</body>
+</html>

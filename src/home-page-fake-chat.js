@@ -26,7 +26,7 @@
     conversation: [
       { role: 'user', text: 'I need to find patient data for a clinical trial analysis' },
       { role: 'assistant', content: {
-        text: 'I found several relevant datasets in your data catalog. The <strong>patient_demographics</strong> dataset contains 10,861 patient records with demographics, diagnosis codes, and treatment history. Would you like me to help you build an analysis pipeline?'
+        text: 'I found several relevant datasets in your data catalog. The <strong>patient_demographics</strong> dataset contains 12,400 patient records with demographics, diagnosis codes, and treatment history. Would you like me to help you build an analysis pipeline?'
       }}
     ],
     typingSpeed: 30,

@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Chat UI Tests</title>
+  <style>
+    body { font-family: -apple-system, sans-serif; padding: 24px; background: #fafafa; }
+    h1 { font-size: 18px; margin-bottom: 16px; }
+    .pass { color: #10B981; }
+    .fail { color: #DC2626; font-weight: 600; }
+    .test { padding: 4px 0; font-size: 14px; font-family: monospace; }
+    .summary { margin-top: 16px; padding: 12px; border-radius: 8px; font-weight: 600; }
+    .summary.all-pass { background: #d1fae5; color: #065f46; }
+    .summary.has-fail { background: #fee2e2; color: #991b1b; }
+  </style>
+</head>
+<body>
+  <h1>Chat UI Tests</h1>
+  <div id="results"></div>
+  <div id="summary"></div>
+
+  <!-- Hidden container for DOM-based tests -->
+  <div id="test-container" style="display:none;"></div>
+
+  <!-- Load source files -->
+  <script src="bridge.js"></script>
+  <script src="config.js"></script>
+  <script src="components.js"></script>
+
+  <script>
+  (function() {
+    'use strict';
+
+    var results = [];
+    var resultsEl = document.getElementById('results');
+    var summaryEl = document.getElementById('summary');
+    var testContainer = document.getElementById('test-container');
+    var C = window.ChatComponents;
+    var config = window.ChatConfig;
+
+    function assert(name, condition, detail) {
+      var passed = !!condition;
+      results.push({ name: name, passed: passed, detail: detail });
+      var div = document.createElement('div');
+      div.className = 'test ' + (passed ? 'pass' : 'fail');
+      div.textContent = (passed ? '\u2713 ' : '\u2717 ') + name + (detail && !passed ? ' — ' + detail : '');
+      resultsEl.appendChild(div);
+    }
+
+    function assertEqual(name, actual, expected) {
+      var passed = actual === expected;
+      var detail = passed ? '' : 'expected ' + JSON.stringify(expected) + ', got ' + JSON.stringify(actual);
+      assert(name, passed, detail);
+    }
+
+    // ═══════════════════════════════════════
+    // Config validation
+    // ═══════════════════════════════════════
+
+    assert('config.chats exists', Array.isArray(config.chats));
+    assert('config.segments exists', Array.isArray(config.segments));
+    assertEqual('config has 3 chats', config.chats.length, 3);
+    assertEqual('config has 17 segments', config.segments.length, 17);
+
+    // Validate all segment references are in bounds
+    config.chats.forEach(function(chat) {
+      chat.segments.forEach(function(idx) {
+        assert(
+          chat.id + ' segment index ' + idx + ' in bounds',
+          idx >= 0 && idx < config.segments.length,
+          'index ' + idx + ' out of range [0, ' + (config.segments.length - 1) + ']'
+        );
+      });
+    });
+
+    // Validate spawnOnComplete references valid chat ids
+    var chatIds = config.chats.map(function(c) { return c.id; });
+    config.chats.forEach(function(chat) {
+      if (chat.spawnOnComplete) {
+        chat.spawnOnComplete.forEach(function(id) {
+          assert(
+            chat.id + ' spawnOnComplete "' + id + '" references valid chat',
+            chatIds.indexOf(id) !== -1
+          );
+        });
+      }
+    });
+
+    // Validate segment types
+    var validTypes = ['narrate', 'question-answer', 'plan-approve-build'];
+    config.segments.forEach(function(seg, i) {
+      assert(
+        'segment ' + i + ' has valid type "' + seg.type + '"',
+        validTypes.indexOf(seg.type) !== -1
+      );
+    });
+
+    // Validate plan-approve-build segments have plan and build
+    config.segments.forEach(function(seg, i) {
+      if (seg.type === 'plan-approve-build') {
+        assert('segment ' + i + ' has plan', !!seg.plan);
+        assert('segment ' + i + ' has build', !!seg.build);
+        assert('segment ' + i + ' build has statusLines', Array.isArray(seg.build.statusLines));
+      }
+    });
+
+    // Validate preview keys are within local segment range
+    config.chats.forEach(function(chat) {
+      if (chat.previews) {
+        Object.keys(chat.previews).forEach(function(key) {
+          var idx = parseInt(key, 10);
+          assert(
+            chat.id + ' preview key ' + key + ' within segment range',
+            idx >= 0 && idx <= chat.segments.length,
+            'max local index is ' + (chat.segments.length - 1)
+          );
+        });
+      }
+    });
+
+    // ═══════════════════════════════════════
+    // Components: esc()
+    // ═══════════════════════════════════════
+
+    assertEqual('esc plain text', C.esc('hello'), 'hello');
+    assertEqual('esc HTML entities', C.esc('<script>alert("xss")</script>'), '&lt;script&gt;alert("xss")&lt;/script&gt;');
+    assertEqual('esc ampersand', C.esc('A & B'), 'A &amp; B');
+
+    // ═══════════════════════════════════════
+    // Components: md()
+    // ═══════════════════════════════════════
+
+    assertEqual('md bold', C.md('**hello**'), '<strong>hello</strong>');
+    assertEqual('md link', C.md('[text](http://example.com)'), '<a href="http://example.com" target="_blank">text</a>');
+    assertEqual('md newline', C.md('line1\nline2'), 'line1<br>line2');
+    assertEqual('md plain text', C.md('just text'), 'just text');
+    assertEqual('md empty', C.md(''), '');
+    assertEqual('md null', C.md(null), '');
+
+    // ═══════════════════════════════════════
+    // Components: userMessage()
+    // ═══════════════════════════════════════
+
+    var userEl = C.userMessage('Hello world');
+    assert('userMessage creates div', userEl.tagName === 'DIV');
+    assert('userMessage has msg class', userEl.classList.contains('msg'));
+    assert('userMessage has msg-user class', userEl.classList.contains('msg-user'));
+    assertEqual('userMessage bubble text', userEl.querySelector('.bubble').textContent, 'Hello world');
+
+    // Typing mode
+    var typingEl = C.userMessage('Hi', { typing: true, typingDelay: 1 });
+    assert('userMessage typing has _typePromise', !!typingEl._typePromise);
+
+    // ═══════════════════════════════════════
+    // Components: assistantText()
+    // ═══════════════════════════════════════
+
+    var assistEl = C.assistantText('Test **bold** text');
+    assert('assistantText creates div', assistEl.tagName === 'DIV');
+    assert('assistantText has msg-assistant class', assistEl.classList.contains('msg-assistant'));
+    assert('assistantText renders bold', assistEl.querySelector('.text').innerHTML.indexOf('<strong>bold</strong>') !== -1);
+
+    // Streaming mode
+    var streamEl = C.assistantText('Stream test', { stream: true, streamDelay: 1 });
+    assert('assistantText stream has _streamPromise', !!streamEl._streamPromise);
+    assert('assistantText stream has word-stream class', streamEl.querySelector('.word-stream') !== null);
+
+    // ═══════════════════════════════════════
+    // Components: followUp()
+    // ═══════════════════════════════════════
+
+    var fuEl = C.followUp('Follow up **text**');
+    assert('followUp creates div', fuEl.tagName === 'DIV');
+    assert('followUp renders markdown', fuEl.innerHTML.indexOf('<strong>text</strong>') !== -1);
+
+    // ═══════════════════════════════════════
+    // Components: statusLine()
+    // ═══════════════════════════════════════
+
+    var slEl = C.statusLine('\u2713', 'Done something', '#00a89c');
+    assert('statusLine creates div', slEl.tagName === 'DIV');
+    assert('statusLine has class', slEl.classList.contains('status-line'));
+    assert('statusLine contains icon', slEl.querySelector('.icon') !== null);
+    assert('statusLine icon has color', slEl.querySelector('.icon').style.color === 'rgb(0, 168, 156)');
+
+    // ═══════════════════════════════════════
+    // Components: planBlock()
+    // ═══════════════════════════════════════
+
+    var planEl = C.planBlock({
+      intro: 'Plan intro',
+      steps: [
+        { label: 'Step 1', detail: 'Detail 1', input: 'in1', output: 'out1' },
+        { label: 'Step 2', detail: 'Detail 2' }
+      ]
+    });
+    assert('planBlock creates div', planEl.tagName === 'DIV');
+    assert('planBlock has class', planEl.classList.contains('plan-block'));
+    assertEqual('planBlock step count', planEl.querySelectorAll('.plan-step').length, 2);
+    assert('planBlock has approve button', planEl.querySelector('.plan-approve-btn') !== null);
+    assert('planBlock has intro', planEl.querySelector('.plan-intro').textContent === 'Plan intro');
+    assert('planBlock step 1 has IO', planEl.querySelector('.step-io') !== null);
+
+    // ═══════════════════════════════════════
+    // Components: taskCard()
+    // ═══════════════════════════════════════
+
+    var tcEl = C.taskCard({ title: 'Test Task', description: '**Bold** desc' });
+    assert('taskCard creates div', tcEl.tagName === 'DIV');
+    assert('taskCard has class', tcEl.classList.contains('task-card'));
+    assertEqual('taskCard title', tcEl.querySelector('.task-title').textContent, 'Test Task');
+    assert('taskCard desc has markdown', tcEl.querySelector('.task-desc').innerHTML.indexOf('<strong>Bold</strong>') !== -1);
+
+    // ═══════════════════════════════════════
+    // Components: barChart()
+    // ═══════════════════════════════════════
+
+    var chartEl = C.barChart({
+      title: 'Test Chart',
+      unit: 'count',
+      data: [
+        { label: 'A', value: 10 },
+        { label: 'B', value: 20 },
+        { label: 'C', value: 5 }
+      ]
+    });
+    assert('barChart creates div', chartEl.tagName === 'DIV');
+    assert('barChart has class', chartEl.classList.contains('chart-container'));
+    assertEqual('barChart bar count', chartEl.querySelectorAll('.chart-bar').length, 3);
+    assertEqual('barChart label count', chartEl.querySelectorAll('.chart-x-label').length, 3);
+    assert('barChart has title', chartEl.querySelector('.chart-title').textContent === 'Test Chart');
+
+    // Tallest bar should be 120px (full height)
+    var bars = chartEl.querySelectorAll('.chart-bar');
+    assertEqual('barChart tallest bar height', bars[1].style.height, '120px');
+
+    // ═══════════════════════════════════════
+    // Components: typingIndicator()
+    // ═══════════════════════════════════════
+
+    var tiEl = C.typingIndicator();
+    assert('typingIndicator creates div', tiEl.tagName === 'DIV');
+    assert('typingIndicator has class', tiEl.classList.contains('typing-indicator'));
+    assertEqual('typingIndicator dot count', tiEl.querySelectorAll('.typing-dot').length, 3);
+
+    // ═══════════════════════════════════════
+    // Components: pill()
+    // ═══════════════════════════════════════
+
+    var pillHtml = C.pill('dataset_name');
+    assert('pill returns span', pillHtml.indexOf('<span class="pill"') === 0);
+    assert('pill contains name', pillHtml.indexOf('dataset_name') !== -1);
+
+    var pillWithAction = C.pill('ds', { type: 'openDataset', dataset: 'ds' });
+    assert('pill with action has data-action', pillWithAction.indexOf('data-action') !== -1);
+
+    // ═══════════════════════════════════════
+    // Bridge: basic structure
+    // ═══════════════════════════════════════
+
+    var B = window.ChatBridge;
+    assert('ChatBridge exists', !!B);
+    assert('ChatBridge has send', typeof B.send === 'function');
+    assert('ChatBridge has on', typeof B.on === 'function');
+
+    // Test listener registration
+    var received = null;
+    B.on('test-event', function(data) { received = data; });
+    window.postMessage({ source: 'dataiku-bridge', type: 'test-event', value: 42 }, '*');
+    // Check async (postMessage is async)
+    setTimeout(function() {
+      assert('Bridge receives messages', received !== null && received.value === 42);
+      showSummary();
+    }, 100);
+
+    // ═══════════════════════════════════════
+    // Summary
+    // ═══════════════════════════════════════
+
+    function showSummary() {
+      var passed = results.filter(function(r) { return r.passed; }).length;
+      var failed = results.filter(function(r) { return !r.passed; }).length;
+      var total = results.length;
+
+      summaryEl.className = 'summary ' + (failed === 0 ? 'all-pass' : 'has-fail');
+      summaryEl.textContent = passed + '/' + total + ' passed' + (failed ? ', ' + failed + ' failed' : '');
+
+      console.log('[Tests] ' + passed + '/' + total + ' passed' + (failed ? ', ' + failed + ' FAILED' : ''));
+    }
+
+    // Show summary for synchronous tests immediately (will update after async)
+    showSummary();
+
+  })();
+  </script>
+</body>
+</html>

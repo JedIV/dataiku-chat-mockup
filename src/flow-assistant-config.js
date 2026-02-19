@@ -17,7 +17,7 @@ window.fakeChatConfig = {
     {
       role: 'assistant',
       content: {
-        intro: 'I\'ve loaded the <strong>patient_demographics</strong> dataset into a new project based on your search. This contains <strong>10,861 patient records</strong> with demographics, contact info, and enrollment history.',
+        intro: 'I\'ve loaded the <strong>patient_demographics</strong> dataset into a new project based on your search. This contains <strong>12,400 patient records</strong> with demographics, contact info, and enrollment history.',
         tasks: [],
         footer: 'We can use this to identify which patients might be good candidates for your clinical trial. Would you like to explore the data?',
         action: {
@@ -169,7 +169,7 @@ window.fakeChatConfig = {
     {
       role: 'assistant',
       content: {
-        intro: 'Pipeline complete! We now have <strong>10,861 unified patient records</strong> combining demographics, lab values, and clinical observations.',
+        intro: 'Pipeline complete! We now have <strong>12,400 unified patient records</strong> combining demographics, lab values, and clinical observations.',
         tasks: [],
         footer: '',
         action: {
@@ -195,7 +195,7 @@ window.fakeChatConfig = {
             title: 'Data Quality Summary',
             inputs: [],
             outputs: [],
-            description: '• <strong>10,861</strong> total patients<br>• <strong>94%</strong> have complete lab panels<br>• <strong>~200</strong> patients flagged with missing hemoglobin values'
+            description: '• <strong>12,400</strong> total patients<br>• <strong>94%</strong> have complete lab panels<br>• <strong>~200</strong> patients flagged with missing hemoglobin values'
           }
         ],
         footer: '',
@@ -265,7 +265,7 @@ window.fakeChatConfig = {
     {
       role: 'assistant',
       content: {
-        intro: 'AI enrichment complete! We now have structured eligibility data for all 10,861 patients.',
+        intro: 'AI enrichment complete! We now have structured eligibility data for all 12,400 patients.',
         tasks: [],
         footer: 'With this enriched dataset, we can train a model to predict which patients are most likely to successfully enroll in the trial. Should I build an enrollment prediction model?',
         action: {
@@ -371,7 +371,7 @@ window.fakeChatConfig = {
             title: 'Pipeline Summary',
             inputs: [],
             outputs: [],
-            description: '1. <strong>Source Data</strong>: 3 datasets (demographics, labs, notes)<br>2. <strong>Processing</strong>: Parse and get most recent records<br>3. <strong>Join</strong>: Unified patient view (10,861 records)<br>4. <strong>AI Enrichment</strong>: LLM-extracted eligibility factors<br>5. <strong>Model</strong>: 87% accurate enrollment prediction<br>6. <strong>Output</strong>: Scored patient list for coordinators'
+            description: '1. <strong>Source Data</strong>: 3 datasets (demographics, labs, notes)<br>2. <strong>Processing</strong>: Parse and get most recent records<br>3. <strong>Join</strong>: Unified patient view (12,400 records)<br>4. <strong>AI Enrichment</strong>: LLM-extracted eligibility factors<br>5. <strong>Model</strong>: 87% accurate enrollment prediction<br>6. <strong>Output</strong>: Scored patient list for coordinators'
           }
         ],
         footer: 'Everything is connected and will automatically update when source data changes. Would you like me to add this summary to the project description so your team knows what this pipeline does?',

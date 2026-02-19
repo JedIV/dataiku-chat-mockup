@@ -70,7 +70,7 @@ window.homePageChatConfig = {
 
   <div style="display: flex; gap: 24px; margin-bottom: 12px;">
     <div style="text-align: center;">
-      <div style="font-size: 20px; font-weight: 700; color: #1a1a1a;">10,861</div>
+      <div style="font-size: 20px; font-weight: 700; color: #1a1a1a;">12,400</div>
       <div style="font-size: 11px; color: #666;">Records</div>
     </div>
     <div style="text-align: center;">
