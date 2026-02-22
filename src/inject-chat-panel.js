@@ -85,18 +85,91 @@
       nodes: [
         'zone__default__savedmodel__PATIENTCOHORT_46_RGqjivfB'
       ],
-      edges: []
+      edges: ['edge20']
     }
   };
 
   var revealedSteps = [];
+
+  // ============================================
+  // AGENT NODE VISIBILITY
+  // ============================================
+  // Agent diagram nodes are <g transform="translate(x,y)"> > foreignObject > .diagram-node
+  var agentNodeSteps = {
+    agentNode:      'translate(0, 0)',
+    datasetLookup:  'translate(-250, 100)',
+    siteInfo:       'translate(250, 100)',
+    siteAssignment: 'translate(0, 100)'
+  };
+
+  var revealedAgentSteps = [];
+  var agentPageActive = false;
+
+  function findGByTranslate(translate) {
+    var all = document.querySelectorAll('g[transform]');
+    for (var i = 0; i < all.length; i++) {
+      if (all[i].getAttribute('transform') === translate) return all[i];
+    }
+    return null;
+  }
+
+  function applyAgentState() {
+    // Remove inline styles so CSS hiding takes effect
+    document.querySelectorAll('.diagram-node').forEach(function(el) {
+      el.style.removeProperty('display');
+    });
+    document.querySelectorAll('.diagram-edge').forEach(function(el) {
+      el.style.removeProperty('display');
+    });
+    // Re-show only revealed nodes
+    revealedAgentSteps.forEach(function(step) {
+      var translate = agentNodeSteps[step];
+      if (!translate) return;
+      var g = findGByTranslate(translate);
+      if (g) {
+        var node = g.querySelector('.diagram-node');
+        if (node) node.style.setProperty('display', 'block', 'important');
+      }
+    });
+    // Reveal each edge matched to its tool step by path endpoint
+    var edgePathMap = {
+      datasetLookup:  '-146',
+      siteAssignment: '104,144',
+      siteInfo:       '354'
+    };
+    document.querySelectorAll('path.diagram-edge').forEach(function(edge) {
+      var d = edge.getAttribute('d') || '';
+      revealedAgentSteps.forEach(function(step) {
+        var marker = edgePathMap[step];
+        if (marker && d.indexOf(marker) !== -1) {
+          edge.style.setProperty('display', 'block', 'important');
+        }
+      });
+    });
+  }
+
+  function revealAgentStep(stepName) {
+    if (!agentNodeSteps[stepName]) {
+      console.log('[ChatPanel] Unknown agent step: ' + stepName);
+      return;
+    }
+    if (revealedAgentSteps.indexOf(stepName) === -1) {
+      revealedAgentSteps.push(stepName);
+    }
+    applyAgentState();
+    console.log('[ChatPanel] Revealed agent: ' + revealedAgentSteps.join(', '));
+  }
 
   // CSS to hide all flow elements when active
   var style = document.createElement('style');
   style.id = 'chat-panel-styles';
   style.textContent = [
     'body.chat-panel-active g[id^="zone__"]{display:none}',
-    'body.chat-panel-active g[id^="edge"]{display:none}'
+    'body.chat-panel-active g[id^="edge"]{display:none}',
+    'body.agent-page-active .diagram-node{display:none}',
+    'body.agent-page-active .diagram-edge{display:none}',
+    'body.agent-page-active .content-resizer{display:none!important}',
+    'body.agent-page-active .left-pane{display:none!important}'
   ].join('');
   document.head.appendChild(style);
 
@@ -136,7 +209,9 @@
     if (revealedSteps.indexOf(stepName) === -1) {
       revealedSteps.push(stepName);
     }
+
     applyFlowState();
+
     console.log('[ChatPanel] Revealed: ' + revealedSteps.join(', '));
   }
 
@@ -149,6 +224,11 @@
     try {
       if (action.type === 'revealFlowStep') {
         revealFlowStep(action.step);
+        return;
+      }
+
+      if (action.type === 'revealAgentStep') {
+        revealAgentStep(action.step);
         return;
       }
 
@@ -202,11 +282,57 @@
 
         case 'openAgent':
           if (action.modelId && action.versionId) {
-            $state.go('projects.project.savedmodels.savedmodel.agent', {
+            agentPageActive = true;
+            document.body.classList.add('agent-page-active');
+            revealedAgentSteps = ['agentNode'];
+            $state.go('projects.project.savedmodels.savedmodel.agent.design', {
               projectKey: projectKey,
               smId: action.modelId,
-              mVersionId: action.versionId
+              fullModelId: action.versionId
             });
+            // Wait for agent page to render, collapse splitter, then signal iframe
+            (function() {
+              var done = false;
+              function finish() {
+                if (done) return;
+                done = true;
+                obs.disconnect();
+                clearTimeout(fallback);
+                var leftPane = document.querySelector('.left-pane');
+                var rightPane = document.querySelector('.right-pane');
+                var resizer = document.querySelector('.content-resizer');
+                if (leftPane) leftPane.style.setProperty('display', 'none', 'important');
+                if (resizer) resizer.style.setProperty('display', 'none', 'important');
+                if (rightPane) rightPane.style.setProperty('left', '0', 'important');
+                window.dispatchEvent(new Event('resize'));
+                iframe.contentWindow.postMessage({ source: 'dataiku-bridge', type: 'agentReady' }, '*');
+                console.log('[ChatPanel] Agent page ready, splitter collapsed');
+                // SVG may not be rendered yet — poll until diagram nodes appear then apply state
+                var attempts = 0;
+                var applyInterval = setInterval(function() {
+                  attempts++;
+                  if (attempts > 20) { clearInterval(applyInterval); return; }
+                  if (findGByTranslate('translate(0, 0)')) {
+                    clearInterval(applyInterval);
+                    applyAgentState();
+                    // Apply pan after resize has settled
+                    setTimeout(function() {
+                      var svg = document.querySelector('.right-pane svg');
+                      if (svg && svg.firstElementChild) {
+                        svg.firstElementChild.setAttribute('transform', 'translate(290, 180) scale(1.03)');
+                      }
+                      console.log('[ChatPanel] Agent pan applied');
+                    }, 400);
+                    console.log('[ChatPanel] Agent state applied after ' + attempts + ' attempt(s)');
+                  }
+                }, 200);
+              }
+              var obs = new MutationObserver(function() {
+                if (document.querySelector('.left-pane')) finish();
+              });
+              obs.observe(document.body, { childList: true, subtree: true });
+              var fallback = setTimeout(finish, 8000);
+            })();
           }
           break;
 
@@ -339,7 +465,7 @@
     if (!(e.ctrlKey || e.metaKey) || !e.shiftKey) return;
 
     var key = e.key.toLowerCase();
-    if (key === 'n' || key === 'r' || key === 't') {
+    if (key === 'n' || key === 'r' || key === 't' || key === 'f') {
       e.preventDefault();
 
       // Forward to iframe
@@ -369,6 +495,16 @@
     var testNode = document.getElementById('zone__default__dataset__PATIENTCOHORT_46_patient__demographics__sf');
     if (testNode && !testNode.style.display && revealedSteps.length > 0) {
       applyFlowState();
+    }
+    // Re-apply agent state when agent page re-renders
+    if (agentPageActive && revealedAgentSteps.length > 0) {
+      var agentCenter = findGByTranslate('translate(0, 0)');
+      if (agentCenter) {
+        var centerNode = agentCenter.querySelector('.diagram-node');
+        if (centerNode && !centerNode.style.display) {
+          applyAgentState();
+        }
+      }
     }
   });
   flowObserver.observe(document.body, { childList: true, subtree: true });

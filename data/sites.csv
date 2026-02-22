@@ -1,0 +1,28 @@
+site_id,site_name,region,target_enrollment,current_enrollment,days_left_in_window,outreach_last_2w,outreach_prev_2w,active_coordinators,pipeline_size,enrollment_risk_score
+SITE-NE-01,"Boston, MA",Northeast,9,8,6,12,15,4,3,13.0
+SITE-NE-02,"New York, NY",Northeast,13,4,26,10,14,2,15,35.8
+SITE-NE-03,"Philadelphia, PA",Northeast,12,3,11,6,16,1,18,75.4
+SITE-NE-04,"Hartford, CT",Northeast,14,5,22,10,14,2,16,36.2
+SITE-MW-01,"Chicago, IL",Midwest,11,7,19,8,8,4,8,14.4
+SITE-MW-02,"Detroit, MI",Midwest,14,8,19,17,16,2,13,15.7
+SITE-MW-03,"Minneapolis, MN",Midwest,10,4,49,13,16,3,8,18.8
+SITE-MW-04,"Cleveland, OH",Midwest,14,11,11,18,19,2,6,15.8
+SITE-MW-05,"Indianapolis, IN",Midwest,9,4,29,18,17,4,12,12.4
+SITE-SW-01,"Dallas, TX",Southwest,13,4,41,8,10,2,19,18.4
+SITE-SW-02,"Phoenix, AZ",Southwest,9,3,59,10,11,3,12,9.6
+SITE-SW-03,"Houston, TX",Southwest,13,7,15,8,14,1,8,40.0
+SITE-SW-04,"Albuquerque, NM",Southwest,10,5,39,12,13,3,12,9.7
+SITE-SE-01,"Atlanta, GA",Southeast,11,4,48,7,9,2,15,15.1
+SITE-SE-02,"Miami, FL",Southeast,14,6,22,8,18,2,10,42.7
+SITE-SE-03,"Charlotte, NC",Southeast,15,12,14,15,15,4,5,14.0
+SITE-SE-04,"Nashville, TN",Southeast,14,5,42,16,15,2,16,13.0
+SITE-SE-05,"Tampa, FL",Southeast,9,2,53,9,11,2,15,14.1
+SITE-WE-01,"Denver, CO",West,14,3,43,19,20,3,20,18.4
+SITE-WE-02,"Salt Lake City, UT",West,8,4,48,25,25,4,6,11.6
+SITE-WE-03,"Las Vegas, NV",West,12,6,32,9,8,4,8,16.6
+SITE-WE-04,"Boise, ID",West,10,6,37,18,17,4,8,9.3
+SITE-PA-01,"Seattle, WA",Pacific,10,7,28,27,25,4,7,7.5
+SITE-PA-02,"San Francisco, CA",Pacific,13,3,36,12,19,2,11,37.6
+SITE-PA-03,"Los Angeles, CA",Pacific,11,6,41,10,10,2,12,6.4
+SITE-PA-04,"Portland, OR",Pacific,10,9,13,20,25,4,3,8.5
+SITE-PA-05,"San Diego, CA",Pacific,14,11,18,14,14,3,7,8.4

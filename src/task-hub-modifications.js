@@ -496,6 +496,13 @@
     });
   }
 
+  // Override Dataiku's 860px cap on the chat section
+  const chatInputSection = document.querySelector('.data-catalog-semantic-search__chat-input-section');
+  if (chatInputSection) {
+    chatInputSection.style.maxWidth = '780px';
+    chatInputSection.style.width = '100%';
+  }
+
   // ============================================
   // 7. Hide original "New Search" button (users can refresh page manually)
   // ============================================

@@ -202,6 +202,27 @@ window.ChatComponents = (function() {
     return div;
   }
 
+  // ── Governance checklist item ──
+  function checklistItem(item) {
+    var div = document.createElement('div');
+    div.className = 'checklist-item';
+
+    var icon = item.status === 'pass' ? '✓' : item.status === 'warn' ? '⚠' : '✗';
+    var color = item.status === 'pass' ? '#3EDAB2' : item.status === 'warn' ? '#EDAB4F' : '#DC2626';
+    var badgeClass = 'checklist-badge checklist-badge--' + item.status;
+    var badgeText = item.badge || (item.status === 'pass' ? 'Pass' : item.status === 'warn' ? 'Warning' : 'Fail');
+
+    div.innerHTML =
+      '<span class="checklist-icon" style="color:' + color + '">' + icon + '</span>' +
+      '<div class="checklist-body">' +
+        '<span class="checklist-label">' + esc(item.label) + '</span>' +
+        (item.note ? '<span class="checklist-note">' + esc(item.note) + '</span>' : '') +
+      '</div>' +
+      '<span class="' + badgeClass + '">' + esc(badgeText) + '</span>';
+
+    return div;
+  }
+
   // ── Typing indicator ──
   function typingIndicator() {
     var div = document.createElement('div');
@@ -221,6 +242,7 @@ window.ChatComponents = (function() {
     planBlock: planBlock,
     taskCard: taskCard,
     barChart: barChart,
+    checklistItem: checklistItem,
     typingIndicator: typingIndicator
   };
 })();

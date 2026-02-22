@@ -7,7 +7,7 @@
  *   - plan-approve-build: assistant proposes plan, user approves, build executes with status lines
  */
 window.ChatConfig = {
-  panelTitle: 'Dataiku Cobuild',
+  panelTitle: 'Cobuild',
   projectSubtitle: 'Patient Cohort Analysis',
 
   chats: [
@@ -16,7 +16,7 @@ window.ChatConfig = {
       name: 'Build enrollment pipeline',
       dotColor: 'teal',
       preview: '',
-      segments: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 13, 14],
+      segments: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
       previews: {
         0: '— loaded patient_demographics',
         1: '— exploring 12,400 records',
@@ -27,10 +27,8 @@ window.ChatConfig = {
         6: '— AI enrichment complete',
         7: '— model trained, 87% accuracy',
         8: '— 12,400 patients scored',
-        10: '— pipeline complete',
-        12: '— spawning threads'
+        10: '— pipeline complete'
       },
-      spawnOnComplete: ['chat-2', 'chat-3']
     },
     {
       id: 'chat-2',
@@ -48,10 +46,24 @@ window.ChatConfig = {
       name: 'Slack agent deployment',
       dotColor: 'green',
       preview: '',
-      segments: [16, 12],
+      segments: [16, 12, 19, 20],
       previews: {
         0: '— planning agent',
-        1: '— live in #trial-enrollment'
+        1: '— live in #trial-enrollment',
+        2: '— governance review needed',
+        3: '— governance kicked off'
+      }
+    },
+    {
+      id: 'chat-4',
+      name: 'Governance review',
+      dotColor: 'blue',
+      preview: '',
+      spawnOnly: true,
+      segments: [17, 18],
+      previews: {
+        0: '— compliance check pending',
+        1: '— governance passed'
       }
     }
   ],
@@ -334,15 +346,22 @@ window.ChatConfig = {
       },
       build: {
         statusLines: [
-          { icon: '⟳', text: 'Generating webapp scaffold...', color: '#888' },
-          { icon: '⟳', text: 'Connecting to scored dataset API...', color: '#888' },
+          { icon: '⟳', text: 'Scaffolding webapp project...', color: '#888' },
+          { icon: '✓', text: 'Project structure ready', color: '#3EDAB2' },
+          { icon: '⟳', text: 'Connecting to patient_all_data_joined_sf_scored...', color: '#888' },
+          { icon: '✓', text: 'Dataset API connected — 12,400 records available', color: '#3EDAB2' },
           { icon: '⟳', text: 'Building patient lookup interface...', color: '#888' },
+          { icon: '⟳', text: 'Compiling frontend assets...', color: '#888', delay: 30000 },
+          { icon: '✗', text: 'Error 137: build container OOM — retrying with 4 GB heap...', color: '#DC2626' },
+          { icon: '⟳', text: 'Recompiling with increased memory...', color: '#888' },
+          { icon: '✓', text: 'Assets compiled successfully', color: '#3EDAB2' },
+          { icon: '⟳', text: 'Configuring access controls...', color: '#888' },
           { icon: '✓', text: 'Webapp deployed: Patient Screening App', color: '#3EDAB2' }
         ],
         flowSteps: [],
         completionText: 'Your webapp is ready! Clinical screeners can access it at the link below. The app is connected to your pipeline and will use the latest model predictions.',
         tasks: [
-          { title: 'Patient Screening App', description: '[Open Patient Screening App →](https://staging-design.qa.managedinstances.dkucloud-dev.com/projects/PATIENTCOHORT/webapps/bGnJv5A_patient-lookup/view)' }
+          { title: 'Patient Screening App', description: '[Open Patient Screening App →](https://staging-design.qa.managedinstances.dkucloud-dev.com/webapps/PATIENTCOHORT/bGnJv5A/)' }
         ]
       }
     },
@@ -354,6 +373,7 @@ window.ChatConfig = {
         { role: 'user', text: 'Yes — and ping Marcus, tell him what you do.', action: { type: 'goToFlow' } }
       ],
       plan: {
+        approveAction: { type: 'openAgent', modelId: 'RGqjivfB', versionId: 'S-PATIENTCOHORT-RGqjivfB-v1' },
         intro: 'I\'ll create an agent that can answer questions about enrollment data and deploy it to Slack:',
         steps: [
           { label: 'Create Enrollment Status Agent', detail: 'Build a conversational agent backed by the scored patient data, model predictions, and pipeline metadata', input: 'patient_all_data_joined_sf_scored', output: 'Enrollment Status Agent' },
@@ -362,21 +382,26 @@ window.ChatConfig = {
       },
       build: {
         statusLines: [
-          { icon: '⟳', text: 'Creating agent: Enrollment Status...', color: '#888' },
-          { icon: '⟳', text: 'Configuring knowledge sources: scored dataset, model features, pipeline docs...', color: '#888' },
-          { icon: '✓', text: 'Agent created: Enrollment Status', color: '#3EDAB2', action: { type: 'openAgent', modelId: 'RGqjivfB', versionId: 'S-PATIENTCOHORT-RGqjivfB-v1' } },
-          { icon: '⟳', text: 'Connecting to Slack workspace...', color: '#888' },
-          { icon: '⟳', text: 'Authenticating with enterprise SSO...', color: '#888' },
-          { icon: '✓', text: 'Slack integration active: #trial-enrollment channel', color: '#3EDAB2' },
-          { icon: '⟳', text: 'Sending introduction to Marcus...', color: '#888' },
-          { icon: '✓', text: 'Message delivered to @marcus.chen', color: '#3EDAB2' }
+          { icon: '⟳', text: 'Spinning up agent scaffold...', color: '#888', waitForAgent: true },
+          { icon: '⟳', text: 'Pulling in patient_all_data_joined_sf_scored as the knowledge base...', color: '#888' },
+          { icon: '✓', text: 'Agent core is ready', color: '#3EDAB2' },
+          { icon: '✓', text: 'Dataset Lookup tool attached', color: '#3EDAB2', action: { type: 'revealAgentStep', step: 'datasetLookup' } },
+          { icon: '⚠', text: 'Site Assignment API returned 403 — retrying with service account...', color: '#EDAB4F' },
+          { icon: '✓', text: 'Got it — Site Assignment connected', color: '#3EDAB2', action: { type: 'revealAgentStep', step: 'siteAssignment' } },
+          { icon: '✓', text: 'Site Information connected', color: '#3EDAB2', action: { type: 'revealAgentStep', step: 'siteInfo' } },
+          { icon: '⟳', text: 'Authenticating with your Slack workspace...', color: '#888' },
+          { icon: '✓', text: 'Slack handshake complete', color: '#3EDAB2' },
+          { icon: '⟳', text: 'Configuring permissions for #trial-enrollment...', color: '#888' },
+          { icon: '✓', text: 'Agent is live in #trial-enrollment', color: '#3EDAB2' },
+          { icon: '⟳', text: 'Drafting intro message for @marcus.chen...', color: '#888' },
+          { icon: '✓', text: 'Sent — Marcus just got pinged', color: '#3EDAB2' }
         ],
         flowSteps: ['agent'],
         completionText: 'Done. The Enrollment Status agent is live in Slack. It just introduced itself to Marcus — he can ask it about patient scores, enrollment predictions, or pipeline status anytime.',
         tasks: [
           { title: 'Slack Message to Marcus', description: '**@Enrollment Status Agent**: Hi Marcus — I\'m the new enrollment status agent for the Patient Cohort trial. I can answer questions about patient scores, eligibility predictions, and recruitment progress across all 22 sites. Just ask me anything here or in #trial-enrollment.' }
         ],
-        followUp: 'The system you built in twenty minutes is now live in Slack — reaching coordinators across twenty-two sites, answering questions in real time, on enterprise data, fully governed.'
+        followUp: 'The system you built in twenty minutes is now live in Slack — reaching coordinators across twenty-two sites, answering questions in real time, on enterprise data. One thing before we\'re fully done: the model and agent need a compliance review in **Dataiku Govern**. Want me to kick that off?'
       }
     },
 
@@ -429,6 +454,67 @@ window.ChatConfig = {
           role: 'assistant',
           text: 'I\'ll create a conversational agent backed by your scored patient data and pipeline metadata, then deploy it to Slack so your coordinators can check enrollment status in real time.',
           followUp: 'Ready to set this up?'
+        }
+      ]
+    },
+
+    // ── Segment 19: Governance confirm (end of chat-3) ──
+    {
+      type: 'narrate',
+      messages: [
+        {
+          role: 'assistant',
+          text: 'I\'ll set up a dedicated governance review thread — it\'ll run the compliance checks in parallel while everything stays live.',
+          followUp: 'Ready to kick it off?'
+        }
+      ]
+    },
+
+    // ── Segment 20: Confirm and spawn governance tab ──
+    {
+      type: 'question-answer',
+      messages: [
+        { role: 'user', text: 'Yeah, let\'s do it.' },
+        {
+          role: 'assistant',
+          text: 'Starting the governance review thread now.',
+          action: { type: 'spawnChat', chatId: 'chat-4' }
+        }
+      ]
+    },
+
+    // ── Segment 17: Governance nudge ──
+    {
+      type: 'narrate',
+      messages: [
+        {
+          role: 'assistant',
+          text: 'Before we call this pipeline production-ready — this model will influence enrollment decisions for real patients across 22 clinical sites. That means it needs to pass a **Dataiku Govern** compliance review before deployment.',
+          followUp: 'Want me to run the governance checks now?'
+        }
+      ]
+    },
+
+    // ── Segment 18: Governance checks ──
+    {
+      type: 'question-answer',
+      messages: [
+        { role: 'user', text: 'Yeah, run the checks.' },
+        {
+          role: 'assistant',
+          text: 'Running governance review on **Predict enrollment_success v1**...',
+          checklist: [
+            { label: 'Model Performance', status: 'pass', note: 'Random Forest — 87% accuracy (threshold: 80%)', badge: 'Pass' },
+            { label: 'Bias & Fairness', status: 'pass', note: 'No disparate impact detected across age, gender, or ethnicity groups', badge: 'Pass' },
+            { label: 'Data Lineage', status: 'pass', note: 'Full lineage documented: 3 source datasets → pipeline → model', badge: 'Pass' },
+            { label: 'PII / HIPAA Compliance', status: 'warn', note: 'Patient IDs present — anonymization layer confirmed active', badge: 'Warning' },
+            { label: 'Stakeholder Sign-off', status: 'pass', note: 'Auto-approved: threshold model, trial-enrollment classification', badge: 'Pass' },
+            { label: 'Model Documentation', status: 'pass', note: 'Model card and pipeline summary attached to version record', badge: 'Pass' }
+          ],
+          followUp: '5 checks passed, 1 warning. The model is cleared for deployment.',
+          tasks: [
+            { title: 'Govern: Predict enrollment_success v1', description: '[View governance record in Dataiku Govern →](https://jed.se-platform.dataiku-sandbox.io/govern/)' }
+          ]
         }
       ]
     }
@@ -492,7 +578,7 @@ window.ChatConfig = {
       nodes: [
         'zone__default__savedmodel__PATIENTCOHORT_46_RGqjivfB'
       ],
-      edges: []
+      edges: ['edge20']
     }
   }
 };

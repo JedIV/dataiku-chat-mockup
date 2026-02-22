@@ -22,6 +22,7 @@ Usage:
 import argparse
 import random
 import os
+import time
 from datetime import datetime, timedelta
 from faker import Faker
 import pandas as pd
@@ -36,24 +37,178 @@ NUM_LAB_RESULTS = 45000
 NUM_CLINICAL_NOTES = 28000
 
 # ============================================
+# Site definitions (region -> list of (site_id, city))
+# ============================================
+SITES = {
+    "Northeast":  [("SITE-NE-01", "Boston, MA"),    ("SITE-NE-02", "New York, NY"),   ("SITE-NE-03", "Philadelphia, PA"), ("SITE-NE-04", "Hartford, CT")],
+    "Midwest":    [("SITE-MW-01", "Chicago, IL"),   ("SITE-MW-02", "Detroit, MI"),    ("SITE-MW-03", "Minneapolis, MN"),  ("SITE-MW-04", "Cleveland, OH"),   ("SITE-MW-05", "Indianapolis, IN")],
+    "Southwest":  [("SITE-SW-01", "Dallas, TX"),    ("SITE-SW-02", "Phoenix, AZ"),    ("SITE-SW-03", "Houston, TX"),      ("SITE-SW-04", "Albuquerque, NM")],
+    "Southeast":  [("SITE-SE-01", "Atlanta, GA"),   ("SITE-SE-02", "Miami, FL"),      ("SITE-SE-03", "Charlotte, NC"),    ("SITE-SE-04", "Nashville, TN"),   ("SITE-SE-05", "Tampa, FL")],
+    "West":       [("SITE-WE-01", "Denver, CO"),    ("SITE-WE-02", "Salt Lake City, UT"), ("SITE-WE-03", "Las Vegas, NV"), ("SITE-WE-04", "Boise, ID")],
+    "Pacific":    [("SITE-PA-01", "Seattle, WA"),   ("SITE-PA-02", "San Francisco, CA"), ("SITE-PA-03", "Los Angeles, CA"), ("SITE-PA-04", "Portland, OR"), ("SITE-PA-05", "San Diego, CA")],
+}
+
+# Flat lookup: site_id -> (city, region)
+SITE_LOOKUP = {site_id: (city, region) for region, sites in SITES.items() for site_id, city in sites}
+
+
+# ============================================
+# Dataset 0: sites
+# ============================================
+def enrollment_risk_score(target, current, days_left, outreach_last_2w, outreach_prev_2w, pipeline_size):
+    """
+    Risk score 0-100 for missing enrollment target.
+    Additive weighted combination of three sub-scores (each 0-1):
+      - pace_score    (weight 0.5): how far behind required enrollment pace
+      - outreach_score (weight 0.3): decline in outreach contact activity
+      - pipeline_score (weight 0.2): thinness of candidate funnel vs remaining gap
+    Designed so typical sites score ~15-30, elevated ~30-45, crisis ~60-80.
+    """
+    gap = target - current
+    if gap <= 0:
+        return 0.0
+
+    elapsed = max(60 - days_left, 1)  # assume 60-day window
+    current_daily_rate = current / elapsed
+    required_daily_rate = gap / max(days_left, 1)
+
+    # Pace: ratio > 8 → maximum score (site needs to 8x its rate to hit target)
+    pace_ratio = required_daily_rate / max(current_daily_rate, 0.01)
+    pace_score = min(pace_ratio / 8.0, 1.0)
+
+    # Outreach: 0 = flat/growing, 1 = zero outreach
+    outreach_trend = outreach_last_2w / max(outreach_prev_2w, 1)
+    outreach_score = max(0.0, 1.0 - outreach_trend)
+
+    # Pipeline: 0 = 3x coverage or more, 1 = no pipeline
+    pipeline_coverage = min(pipeline_size / gap, 3.0)
+    pipeline_score = max(0.0, 1.0 - pipeline_coverage / 3.0)
+
+    raw = 0.5 * pace_score + 0.3 * outreach_score + 0.2 * pipeline_score
+    return round(raw * 100, 1)
+
+
+def generate_sites():
+    """Generate sites table with enrollment targets, progress, and outreach metrics."""
+    # NE sites seeded for the demo story (scores computed against new additive formula):
+    #   SITE-NE-03 (Philadelphia) = crisis  (~75)
+    #   SITE-NE-02 (New York)     = elevated (~36)
+    #   SITE-NE-04 (Hartford)     = elevated (~36)
+    crisis_site = 'SITE-NE-03'
+    elevated_sites = {
+        # pace_ratio=2.93 (pace_score=0.37), outreach_score=0.29, pipeline_score=0.44 → 35.8
+        'SITE-NE-02': dict(target=13, current=4, days_left=26, outreach_prev=14, outreach_last=10, pipeline=15, coordinators=2),
+        # pace_ratio=3.10 (pace_score=0.39), outreach_score=0.29, pipeline_score=0.41 → 36.1
+        'SITE-NE-04': dict(target=14, current=5, days_left=22, outreach_prev=14, outreach_last=10, pipeline=16, coordinators=2),
+    }
+
+    records = []
+    for region, sites in SITES.items():
+        for site_id, city in sites:
+            target = random.randint(8, 15)
+            days_left = random.randint(5, 60)
+
+            if site_id in elevated_sites:
+                p = elevated_sites[site_id]
+                target              = p['target']
+                days_left           = p['days_left']
+                current             = p['current']
+                outreach_prev_2w    = p['outreach_prev']
+                outreach_last_2w    = p['outreach_last']
+                active_coordinators = p['coordinators']
+                pipeline_size       = p['pipeline']
+
+            elif site_id == crisis_site:
+                # pace_ratio=13.4 (pace_score=1.0), outreach_score=0.63, pipeline_score=0.33 → 75.4
+                target = 12
+                days_left = 11
+                current = 3
+                outreach_prev_2w = 16
+                outreach_last_2w = 6
+                active_coordinators = 1
+                gap = target - current
+                pipeline_size = 18
+            else:
+                # Current enrollment correlates with how little time is left
+                if days_left < 15:
+                    ratio = random.uniform(0.70, 1.00)
+                elif days_left < 35:
+                    ratio = random.uniform(0.40, 0.80)
+                else:
+                    ratio = random.uniform(0.20, 0.60)
+
+                current = max(1, min(target, round(target * ratio)))
+
+                expected_pace = target * (1 - days_left / 60)
+                is_struggling = current < expected_pace * 0.75
+
+                outreach_prev_2w = random.randint(8, 25)
+                if is_struggling:
+                    # Struggling: notable outreach decline
+                    outreach_last_2w = max(1, round(outreach_prev_2w * random.uniform(0.40, 0.65)))
+                else:
+                    # Healthy but outreach often slightly lower than previous period
+                    outreach_last_2w = max(1, round(outreach_prev_2w * random.uniform(0.75, 1.10)))
+
+                active_coordinators = random.randint(1, 2) if is_struggling else random.randint(2, 4)
+                gap = max(0, target - current)
+                # Smaller pipelines → higher pipeline_score → more realistic spread
+                if is_struggling:
+                    pipeline_size = max(gap + 1, round(gap * random.uniform(0.8, 1.8)))
+                else:
+                    pipeline_size = max(gap + 2, round(gap * random.uniform(1.0, 2.5)))
+
+            risk = enrollment_risk_score(target, current, days_left, outreach_last_2w, outreach_prev_2w, pipeline_size)
+
+            records.append({
+                "site_id": site_id,
+                "site_name": city,
+                "region": region,
+                "target_enrollment": target,
+                "current_enrollment": current,
+                "days_left_in_window": days_left,
+                "outreach_last_2w": outreach_last_2w,
+                "outreach_prev_2w": outreach_prev_2w,
+                "active_coordinators": active_coordinators,
+                "pipeline_size": pipeline_size,
+                "enrollment_risk_score": risk,
+            })
+    return pd.DataFrame(records)
+
+
+# ============================================
 # Dataset 1: patient_demographics
 # ============================================
 def generate_patient_demographics(num_patients):
     """Generate patient demographics dataset with enrollment_success that correlates with key predictors."""
 
-    regions = ["Northeast", "Midwest", "Southwest", "Southeast", "West", "Pacific"]
+    region_keys = list(SITES.keys())
     genders = ["Female", "Male", "Non-binary"]
     gender_weights = [0.48, 0.48, 0.04]
     contact_statuses = ["Active", "Inactive", "Deceased"]
     contact_weights = [0.85, 0.12, 0.03]
 
+    # Pre-generate all random dates at once (much faster than faker in a loop)
+    t = time.time()
+    start_date = datetime(2025, 1, 1)
+    date_range_days = (datetime(2025, 12, 31) - start_date).days
+    random_days = [random.randint(0, date_range_days) for _ in range(num_patients)]
+    print(f"   [timing] pre-generate dates: {time.time()-t:.2f}s", flush=True)
+
     records = []
+    t = time.time()
     for i in range(num_patients):
+        if i > 0 and i % 2000 == 0:
+            print(f"   [timing] {i}/{num_patients} records in {time.time()-t:.2f}s", flush=True)
         patient_id = f"PT-2025-{i:05d}"
 
         # Age distribution: median ~58, range 18-95, concentrated 45-72
         age = int(random.gauss(58, 12))
         age = max(18, min(95, age))
+
+        # Assign region and site
+        region = random.choice(region_keys)
+        site_id = random.choice(SITES[region])[0]
 
         # Generate predictors
         site_distance_km = round(random.expovariate(1/25) + 1, 1)  # Most close, some far
@@ -79,12 +234,13 @@ def generate_patient_demographics(num_patients):
             "patient_id": patient_id,
             "age": age,
             "gender": random.choices(genders, weights=gender_weights)[0],
-            "region": random.choice(regions),
+            "region": region,
+            "site_id": site_id,
             "site_distance_km": site_distance_km,
             "contact_status": random.choices(contact_statuses, weights=contact_weights)[0],
             "enrollment_history": enrollment_history,
             "contraindication_count": contraindication_count,
-            "last_visit_date": fake.date_between(start_date="2025-01-01", end_date="2025-12-31").isoformat(),
+            "last_visit_date": (start_date + timedelta(days=random_days[i])).strftime("%Y-%m-%d"),
             "enrollment_success": enrollment_success
         })
 
@@ -632,6 +788,8 @@ def generate_clinical_notes_template(num_notes, patient_ids):
 # ============================================
 def main():
     parser = argparse.ArgumentParser(description="Generate clinical trial demo datasets")
+    parser.add_argument("--only", nargs="+", choices=["sites", "patients", "labs", "notes"],
+                        help="Only generate specific datasets (e.g. --only sites patients)")
     parser.add_argument("--use-claude", action="store_true",
                         help="Use Claude API for clinical note generation (requires ANTHROPIC_API_KEY)")
     parser.add_argument("--expand-notes", action="store_true",
@@ -646,61 +804,87 @@ def main():
                         help=f"Number of lab results to generate (default: {NUM_LAB_RESULTS})")
     args = parser.parse_args()
 
+    # Determine which datasets to generate
+    run = set(args.only) if args.only else {"sites", "patients", "labs", "notes"}
+
     print("Generating clinical trial datasets...", flush=True)
 
-    # Generate patient demographics first (we need patient IDs for other datasets)
-    print(f"\n1. Generating patient_demographics ({args.num_patients:,} records)...", flush=True)
-    patient_df = generate_patient_demographics(args.num_patients)
-    patient_ids = patient_df["patient_id"].tolist()
-    patient_df.to_csv("patient_demographics.csv", index=False)
-    print(f"   Saved: patient_demographics.csv")
-    print(f"   Age distribution: mean={patient_df['age'].mean():.1f}, median={patient_df['age'].median()}")
-    print(f"   Enrollment success rate: {patient_df['enrollment_success'].mean()*100:.1f}%")
-    print(f"   Contraindication counts: {patient_df['contraindication_count'].value_counts().sort_index().to_dict()}")
+    sites_df = patient_df = lab_df = notes_df = None
+    patient_ids = None
+
+    # Generate sites table
+    if "sites" in run:
+        print(f"\n0. Generating sites ({sum(len(v) for v in SITES.values())} records)...", flush=True)
+        sites_df = generate_sites()
+        sites_df.to_csv("sites.csv", index=False)
+        print(f"   Saved: sites.csv")
+        print(f"   Sites per region: { {r: len(s) for r, s in SITES.items()} }")
+
+    # Generate patient demographics
+    if "patients" in run:
+        print(f"\n1. Generating patient_demographics ({args.num_patients:,} records)...", flush=True)
+        t0 = time.time()
+        patient_df = generate_patient_demographics(args.num_patients)
+        print(f"   [timing] generate loop done: {time.time()-t0:.2f}s", flush=True)
+        t1 = time.time()
+        patient_ids = patient_df["patient_id"].tolist()
+        print(f"   [timing] tolist: {time.time()-t1:.2f}s", flush=True)
+        t2 = time.time()
+        patient_df.to_csv("patient_demographics.csv", index=False)
+        print(f"   [timing] to_csv: {time.time()-t2:.2f}s", flush=True)
+        print(f"   Saved: patient_demographics.csv")
+        print(f"   Age distribution: mean={patient_df['age'].mean():.1f}, median={patient_df['age'].median()}")
+        print(f"   Enrollment success rate: {patient_df['enrollment_success'].mean()*100:.1f}%")
+        print(f"   Contraindication counts: {patient_df['contraindication_count'].value_counts().sort_index().to_dict()}")
 
     # Generate lab results
-    print(f"\n2. Generating lab_results_2025 ({args.num_lab_results:,} records)...")
-    lab_df = generate_lab_results(args.num_lab_results, patient_ids)
-    lab_df.to_csv("lab_results_2025.csv", index=False)
-    print(f"   Saved: lab_results_2025.csv")
-    print(f"   Flag distribution: {lab_df['flag'].value_counts().to_dict()}")
-    # Show the planted obvious errors
-    obvious = lab_df[lab_df['result_value'].isin([150.0, 140.0, 9500.0])]
-    print(f"   Planted {len(obvious)} obvious data entry errors for manual correction")
+    if "labs" in run:
+        if patient_ids is None:
+            patient_ids = pd.read_csv("patient_demographics.csv")["patient_id"].tolist()
+        print(f"\n2. Generating lab_results_2025 ({args.num_lab_results:,} records)...")
+        lab_df = generate_lab_results(args.num_lab_results, patient_ids)
+        lab_df.to_csv("lab_results_2025.csv", index=False)
+        print(f"   Saved: lab_results_2025.csv")
+        print(f"   Flag distribution: {lab_df['flag'].value_counts().to_dict()}")
+        obvious = lab_df[lab_df['result_value'].isin([150.0, 140.0, 9500.0])]
+        print(f"   Planted {len(obvious)} obvious data entry errors for manual correction")
 
     # Generate clinical notes
-    print(f"\n3. Generating clinical_notes_raw ({args.num_notes:,} records)...")
-
-    if args.expand_notes:
-        # Two-step approach: generate base notes with Claude, then expand with variations
-        print(f"   Step 1: Generating {args.base_notes:,} base notes with Claude API...")
-        base_notes_df = generate_clinical_notes_with_claude(args.base_notes, patient_df)
-        if base_notes_df is None:
-            print("   ERROR: Claude API failed. Falling back to template-based generation...")
-            notes_df = generate_clinical_notes_template(args.num_notes, patient_ids)
+    if "notes" in run:
+        if patient_ids is None:
+            patient_ids = pd.read_csv("patient_demographics.csv")["patient_id"].tolist()
+        if patient_df is None:
+            patient_df = pd.read_csv("patient_demographics.csv")
+        print(f"\n3. Generating clinical_notes_raw ({args.num_notes:,} records)...")
+        if args.expand_notes:
+            print(f"   Step 1: Generating {args.base_notes:,} base notes with Claude API...")
+            base_notes_df = generate_clinical_notes_with_claude(args.base_notes, patient_df)
+            if base_notes_df is None:
+                print("   ERROR: Claude API failed. Falling back to template-based generation...")
+                notes_df = generate_clinical_notes_template(args.num_notes, patient_ids)
+            else:
+                print(f"   Step 2: Expanding to {args.num_notes:,} notes using variations...")
+                notes_df = expand_notes_with_variations(base_notes_df, args.num_notes, patient_ids)
+                print(f"   Expansion complete: {args.base_notes:,} base notes -> {len(notes_df):,} total notes")
+        elif args.use_claude:
+            print("   Using Claude API for note generation...")
+            notes_df = generate_clinical_notes_with_claude(args.num_notes, patient_df)
+            if notes_df is None:
+                print("   Falling back to template-based generation...")
+                notes_df = generate_clinical_notes_template(args.num_notes, patient_ids)
         else:
-            print(f"   Step 2: Expanding to {args.num_notes:,} notes using variations...")
-            notes_df = expand_notes_with_variations(base_notes_df, args.num_notes, patient_ids)
-            print(f"   Expansion complete: {args.base_notes:,} base notes -> {len(notes_df):,} total notes")
-    elif args.use_claude:
-        print("   Using Claude API for note generation...")
-        notes_df = generate_clinical_notes_with_claude(args.num_notes, patient_df)
-        if notes_df is None:
-            print("   Falling back to template-based generation...")
+            print("   Using template-based generation (use --use-claude or --expand-notes for AI-generated notes)")
             notes_df = generate_clinical_notes_template(args.num_notes, patient_ids)
-    else:
-        print("   Using template-based generation (use --use-claude or --expand-notes for AI-generated notes)")
-        notes_df = generate_clinical_notes_template(args.num_notes, patient_ids)
+        notes_df.to_csv("clinical_notes_raw.csv", index=False)
+        print(f"   Saved: clinical_notes_raw.csv")
+        print(f"   Note types: {notes_df['note_type'].value_counts().to_dict()}")
 
-    notes_df.to_csv("clinical_notes_raw.csv", index=False)
-    print(f"   Saved: clinical_notes_raw.csv")
-    print(f"   Note types: {notes_df['note_type'].value_counts().to_dict()}")
-
-    print("\n✓ All datasets generated successfully!")
+    print("\n✓ Done!")
     print(f"\nSummary:")
-    print(f"  - patient_demographics.csv: {len(patient_df):,} records")
-    print(f"  - lab_results_2025.csv: {len(lab_df):,} records")
-    print(f"  - clinical_notes_raw.csv: {len(notes_df):,} records")
+    if sites_df is not None:    print(f"  - sites.csv: {len(sites_df)} records")
+    if patient_df is not None:  print(f"  - patient_demographics.csv: {len(patient_df):,} records")
+    if lab_df is not None:      print(f"  - lab_results_2025.csv: {len(lab_df):,} records")
+    if notes_df is not None:    print(f"  - clinical_notes_raw.csv: {len(notes_df):,} records")
 
 
 if __name__ == "__main__":

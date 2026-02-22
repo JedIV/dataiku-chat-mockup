@@ -204,7 +204,7 @@
 
     var icon = document.createElement('div');
     icon.style.cssText = 'font-size: 20px; line-height: 1; flex-shrink: 0; margin-top: 1px;';
-    icon.textContent = card.icon;
+    icon.innerHTML = card.icon;
 
     var textWrap = document.createElement('div');
     textWrap.style.cssText = 'flex: 1; min-width: 0;';
@@ -223,6 +223,48 @@
     cardEl.appendChild(textWrap);
 
     return cardEl;
+  }
+
+  function createInlineChart(chart) {
+    var wrap = document.createElement('div');
+    wrap.style.cssText = 'margin-bottom: 12px; background: #F8F4E4; border: 1px solid #e5e7eb; border-radius: 10px; padding: 12px 14px;';
+
+    if (chart.title) {
+      var title = document.createElement('div');
+      title.style.cssText = 'font-size: 11px; font-family: "DM Mono", monospace; color: #42485B; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.05em;';
+      title.textContent = chart.title;
+      wrap.appendChild(title);
+    }
+
+    var maxVal = Math.max.apply(null, chart.bars.map(function(b) { return b.value; }));
+
+    chart.bars.forEach(function(bar) {
+      var row = document.createElement('div');
+      row.style.cssText = 'display: flex; align-items: center; gap: 10px; margin-bottom: 7px;';
+
+      var label = document.createElement('div');
+      label.style.cssText = 'font-size: 11px; font-family: "DM Mono", monospace; color: #42485B; width: 160px; flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;';
+      label.textContent = bar.label;
+
+      var track = document.createElement('div');
+      track.style.cssText = 'flex: 1; height: 8px; background: rgba(0,0,0,0.07); border-radius: 4px; overflow: hidden;';
+
+      var fill = document.createElement('div');
+      var pct = Math.round((bar.value / maxVal) * 100);
+      fill.style.cssText = 'height: 100%; width: ' + pct + '%; background: #3EDAB2; border-radius: 4px;';
+      track.appendChild(fill);
+
+      var count = document.createElement('div');
+      count.style.cssText = 'font-size: 11px; font-family: "DM Mono", monospace; color: #42485B; width: 48px; text-align: right; flex-shrink: 0;';
+      count.textContent = bar.unit;
+
+      row.appendChild(label);
+      row.appendChild(track);
+      row.appendChild(count);
+      wrap.appendChild(row);
+    });
+
+    return wrap;
   }
 
   // ============================================
@@ -248,50 +290,98 @@
     group.appendChild(message);
     container.appendChild(group);
 
-    // 3. Show thinking block with header
-    var thinking = createThinkingBlock(content.thinking);
-    message.appendChild(thinking.block);
-    scrollToBottom();
-
-    // 4. Stream in reasoning lines one at a time (250ms each)
-    for (var i = 0; i < content.thinking.length; i++) {
-      var line = createThinkingLine(content.thinking[i]);
-      thinking.body.appendChild(line);
+    // 3. Show text up front if present
+    if (content.text) {
+      var introEl = document.createElement('div');
+      introEl.style.cssText = 'margin-bottom: 10px; font-size: 14px; line-height: 1.5;';
+      introEl.innerHTML = content.text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+      message.appendChild(introEl);
       scrollToBottom();
-      await sleep(250);
     }
 
-    // 5. Pause 1000ms
-    await sleep(1000);
+    // 4. Optionally show thinking block
+    if (content.thinking) {
+      var thinking = createThinkingBlock(content.thinking);
+      message.appendChild(thinking.block);
+      scrollToBottom();
 
-    // 6. Auto-collapse: hide body, update header
-    thinking.body.style.display = 'none';
-    thinking.chevron.textContent = '\u25B8';
-    thinking.label.textContent = '\u2726 Thought for 3s';
-    scrollToBottom();
+      for (var i = 0; i < content.thinking.length; i++) {
+        var line = createThinkingLine(content.thinking[i]);
+        thinking.body.appendChild(line);
+        scrollToBottom();
+        await sleep(250);
+      }
 
-    // 7. Cards fade in one at a time (400ms stagger)
+      await sleep(1000);
+
+      thinking.label.textContent = '\u2726 Thought for 3s';
+      scrollToBottom();
+    }
+
+    // 6. Preamble text between thinking and cards/chart
+    if (content.preamble) {
+      await sleep(300);
+      var preambleEl = document.createElement('div');
+      preambleEl.style.cssText = 'margin-bottom: 10px; font-size: 14px; line-height: 1.5;';
+      preambleEl.innerHTML = content.preamble.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+      message.appendChild(preambleEl);
+      scrollToBottom();
+    }
+
+    // 6b. Inline bar chart
+    if (content.chart) {
+      await sleep(300);
+      var chartEl = createInlineChart(content.chart);
+      message.appendChild(chartEl);
+      scrollToBottom();
+    }
+
+    // 6c. Log lines (staggered checklist)
+    if (content.log && content.log.length > 0) {
+      var logWrap = document.createElement('div');
+      logWrap.style.cssText = 'display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px;';
+      message.appendChild(logWrap);
+
+      for (var li = 0; li < content.log.length; li++) {
+        await sleep(600);
+        var logLine = document.createElement('div');
+        logLine.style.cssText = 'display: flex; align-items: center; gap: 8px; font-size: 13px; color: #1A1A1A; animation: fadeIn 0.2s ease-out;';
+        logLine.innerHTML = '<span style="color:#3EDAB2; font-weight:700;">✓</span> ' + content.log[li];
+        logWrap.appendChild(logLine);
+        scrollToBottom();
+      }
+    }
+
+    // 7. Cards fade in one at a time (1200ms stagger for processing feel)
     if (content.cards && content.cards.length > 0) {
       var cardsContainer = document.createElement('div');
       cardsContainer.style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px;';
       message.appendChild(cardsContainer);
 
       for (var j = 0; j < content.cards.length; j++) {
+        // Show typing indicator between cards
+        var cardTyping = createTypingIndicator();
+        cardsContainer.appendChild(cardTyping);
+        scrollToBottom();
+        await sleep(1200);
+        cardsContainer.removeChild(cardTyping);
+
         var card = createWorkstreamCard(content.cards[j]);
         cardsContainer.appendChild(card);
         scrollToBottom();
-        await sleep(400);
       }
     }
 
-    // 8. Footer text appears
-    if (content.text) {
+    // 8. Footer text appears after a short pause
+    if (content.footer) {
+      await sleep(600);
       var footer = document.createElement('div');
       footer.style.cssText = 'margin-top: 4px; font-size: 14px; line-height: 1.5;';
-      footer.innerHTML = content.text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+      footer.innerHTML = content.footer;
       message.appendChild(footer);
       scrollToBottom();
     }
+
   }
 
   // ============================================
@@ -395,7 +485,7 @@
       var content = current.content || {};
 
       // Check if this is a thinking+cards message
-      if (content.thinking || content.cards) {
+      if (content.thinking || content.cards || content.log || content.chart || content.preamble) {
         state.isTyping = true;
         await advanceThinkingAndCards(container, content);
         state.isTyping = false;
@@ -455,6 +545,15 @@
   // ============================================
   function setupStyles() {
     if (document.getElementById('home-chat-styles')) return;
+
+    // Load Material Symbols Sharp
+    if (!document.getElementById('material-symbols-sharp')) {
+      var fontLink = document.createElement('link');
+      fontLink.id = 'material-symbols-sharp';
+      fontLink.rel = 'stylesheet';
+      fontLink.href = 'https://fonts.googleapis.com/css2?family=Material+Symbols+Sharp:opsz,wght,FILL,GRAD@24,500,1,200';
+      document.head.appendChild(fontLink);
+    }
 
     var style = document.createElement('style');
     style.id = 'home-chat-styles';

@@ -29,13 +29,34 @@
   var newChatBtn = document.getElementById('new-chat-btn');
   var viewToggleEl = document.getElementById('view-toggle');
 
+  var fastMode = false;
+
   function sleep(ms) {
-    return new Promise(function(r) { setTimeout(r, ms); });
+    return new Promise(function(r) { setTimeout(r, fastMode ? 0 : ms); });
   }
+
+  // ── Agent ready signal (resolved when parent signals .left-pane rendered) ──
+  var agentReadyResolve = null;
+  var agentReadyPromise = new Promise(function(r) { agentReadyResolve = r; });
+
+  B.on('agentReady', function() {
+    if (agentReadyResolve) {
+      agentReadyResolve();
+      agentReadyResolve = null;
+    }
+  });
 
   // ── Execute action via bridge ──
   function executeAction(action) {
     if (!action) return;
+    if (action.type === 'openAgent') {
+      // Reset promise so statusLines can await it
+      agentReadyPromise = new Promise(function(r) { agentReadyResolve = r; });
+    }
+    if (action.type === 'spawnChat') {
+      spawnSingleChat(action.chatId);
+      return;
+    }
     B.send(action.type, action);
   }
 
@@ -51,9 +72,9 @@
   }
 
   // ── Render a complete assistant message ──
-  async function renderAssistantMessage(messagesEl, msg, stream) {
+  async function renderAssistantMessage(messagesEl, msg, stream, chatId) {
     if (msg.text) {
-      var textEl = C.assistantText(msg.text, { stream: stream, streamDelay: 40 });
+      var textEl = C.assistantText(msg.text, { stream: stream && !fastMode, streamDelay: 40 });
       append(messagesEl, textEl);
       if (textEl._streamPromise) await textEl._streamPromise;
     }
@@ -74,7 +95,23 @@
       for (var i = 0; i < msg.statusLines.length; i++) {
         var sl = msg.statusLines[i];
         append(messagesEl, C.statusLine(sl.icon, sl.text, sl.color));
+        if (chatId && appState.chatStates[chatId]) {
+          appState.chatStates[chatId].lastStatusText = sl.text;
+          updatePreview(chatId);
+        }
         await sleep(400);
+      }
+    }
+
+    if (msg.checklist) {
+      for (var i = 0; i < msg.checklist.length; i++) {
+        var ci = msg.checklist[i];
+        append(messagesEl, C.checklistItem(ci));
+        if (chatId && appState.chatStates[chatId]) {
+          appState.chatStates[chatId].lastStatusText = ci.label;
+          updatePreview(chatId);
+        }
+        await sleep(500 + Math.random() * 400);
       }
     }
 
@@ -167,7 +204,7 @@
     var msg = seg.messages[chatState.messageIndex];
 
     if (msg.role === 'user') {
-      var userEl = C.userMessage(msg.text, { typing: true, typingDelay: 45 });
+      var userEl = C.userMessage(msg.text, { typing: !fastMode, typingDelay: 45 });
       append(messagesEl, userEl);
       if (userEl._typePromise) await userEl._typePromise;
       if (msg.action) executeAction(msg.action);
@@ -177,13 +214,13 @@
       if (chatState.messageIndex < seg.messages.length && seg.messages[chatState.messageIndex].role === 'assistant') {
         await showTypingThen(messagesEl, async function() {
           var assistMsg = seg.messages[chatState.messageIndex];
-          await renderAssistantMessage(messagesEl, assistMsg, true);
+          await renderAssistantMessage(messagesEl, assistMsg, true, chatId);
           chatState.messageIndex++;
         });
       }
     } else {
       await showTypingThen(messagesEl, async function() {
-        await renderAssistantMessage(messagesEl, msg, true);
+        await renderAssistantMessage(messagesEl, msg, true, chatId);
         chatState.messageIndex++;
       });
     }
@@ -203,7 +240,7 @@
       if (chatState.messageIndex < seg.messages.length) {
         var msg = seg.messages[chatState.messageIndex];
         if (msg.role === 'user') {
-          var userEl = C.userMessage(msg.text, { typing: true, typingDelay: 45 });
+          var userEl = C.userMessage(msg.text, { typing: !fastMode, typingDelay: 45 });
           append(messagesEl, userEl);
           if (userEl._typePromise) await userEl._typePromise;
           if (msg.action) executeAction(msg.action);
@@ -252,6 +289,10 @@
     btn.textContent = 'Approved';
     chatState.phase = 'building';
 
+    if (seg.plan && seg.plan.approveAction) {
+      executeAction(seg.plan.approveAction);
+    }
+
     await sleep(400);
 
     var build = seg.build;
@@ -259,7 +300,17 @@
     for (var i = 0; i < build.statusLines.length; i++) {
       var sl = build.statusLines[i];
       append(messagesEl, C.statusLine(sl.icon, sl.text, sl.color));
-      await sleep(600);
+      chatState.lastStatusText = sl.text;
+      updatePreview(chatId);
+
+      if (sl.waitForAgent) {
+        await agentReadyPromise;
+        await sleep(300);
+      } else if (sl.delay) {
+        await sleep(sl.delay);
+      } else {
+        await sleep(400 + Math.random() * 600);
+      }
 
       if (sl.action) {
         executeAction(sl.action);
@@ -274,16 +325,10 @@
       }
     }
 
-    if (build.flowSteps) {
-      build.flowSteps.forEach(function(step) {
-        executeAction({ type: 'revealFlowStep', step: step });
-      });
-    }
-
     await sleep(300);
 
     if (build.completionText) {
-      var completionEl = C.assistantText(build.completionText, { stream: true, streamDelay: 30 });
+      var completionEl = C.assistantText(build.completionText, { stream: !fastMode, streamDelay: 30 });
       append(messagesEl, completionEl);
       if (completionEl._streamPromise) await completionEl._streamPromise;
     }
@@ -306,6 +351,7 @@
     chatState.segmentIndex++;
     chatState.messageIndex = 0;
     chatState.phase = 'idle';
+    chatState.lastStatusText = '';
 
     checkChatCompletion(chatId);
   }
@@ -320,12 +366,6 @@
       chatState.completed = true;
       updateStatusLight(chatId);
       updatePreview(chatId);
-
-      // Auto-spawn chats if configured
-      if (chatDef.spawnOnComplete && chatDef.spawnOnComplete.length) {
-        spawnChats(chatDef.spawnOnComplete);
-        return;
-      }
     }
   }
 
@@ -344,14 +384,14 @@
       var currentMsg = seg.messages[j];
       if (currentMsg.role === 'assistant') {
         if (animate) {
-          await showTypingThen(messagesEl, (function(m, el) {
+          await showTypingThen(messagesEl, (function(m, el, cid) {
             return async function() {
-              await renderAssistantMessage(el, m, true);
+              await renderAssistantMessage(el, m, true, cid);
             };
-          })(currentMsg, messagesEl));
+          })(currentMsg, messagesEl, chatId));
         } else {
           // Instant (no typing indicator or streaming)
-          await renderAssistantMessage(messagesEl, currentMsg, false);
+          await renderAssistantMessage(messagesEl, currentMsg, false, chatId);
         }
       }
     }
@@ -362,6 +402,27 @@
     chatState.isAnimating = false;
     updateStatusLight(chatId);
     updatePreview(chatId);
+  }
+
+  // ── Spawn a single chat by id (used by spawnChat action) ──
+  async function spawnSingleChat(chatId) {
+    if (appState.chatStates[chatId]) return; // already exists
+
+    createChatCard(chatId);
+
+    // Track nextChatIndex past this chat
+    for (var i = 0; i < config.chats.length; i++) {
+      if (config.chats[i].id === chatId) {
+        appState.nextChatIndex = Math.max(appState.nextChatIndex, i + 1);
+        break;
+      }
+    }
+
+    // Expand to the new chat and animate its opener
+    appState.activeChatId = chatId;
+    applyLayout();
+
+    await autoPlayOpener(chatId, true);
   }
 
   // ── Spawn multiple chats at once ──
@@ -422,6 +483,10 @@
 
     if (chatState.completed) {
       light.classList.add('done');
+    } else if (chatState.failed) {
+      light.classList.add('error');
+    } else if (chatState.phase === 'plan-shown') {
+      light.classList.add('needs-input');
     } else if (chatState.isAnimating || chatState.phase === 'building') {
       light.classList.add('running');
     } else {
@@ -433,16 +498,23 @@
   function updatePreview(chatId) {
     var chatState = appState.chatStates[chatId];
     var chatDef = getChatDef(chatId);
-    if (!chatState || !chatDef || !chatDef.previews) return;
+    if (!chatState || !chatDef) return;
 
     var card = document.getElementById(chatId);
     if (!card) return;
     var previewEl = card.querySelector('.chat-card-preview');
     if (!previewEl) return;
 
-    // Find the most recent preview for the current segment index
+    // Dynamic: use last status line text if available
+    if (chatState.lastStatusText) {
+      previewEl.textContent = '— ' + chatState.lastStatusText;
+      return;
+    }
+
+    // Static fallback from previews map — look at last *completed* segment
+    if (!chatDef.previews) return;
     var text = chatDef.preview || '';
-    for (var i = chatState.segmentIndex; i >= 0; i--) {
+    for (var i = chatState.segmentIndex - 1; i >= 0; i--) {
       if (chatDef.previews[i] !== undefined) {
         text = chatDef.previews[i];
         break;
@@ -463,6 +535,8 @@
       phase: 'idle',
       isAnimating: false,
       completed: false,
+      failed: false,
+      lastStatusText: '',
       messagesEl: null
     };
 
@@ -647,6 +721,10 @@
     } else if (key === 'r') {
       e.preventDefault();
       reset();
+    } else if (key === 'f') {
+      e.preventDefault();
+      fastMode = !fastMode;
+      console.log('[ChatApp] Fast mode ' + (fastMode ? 'ON' : 'OFF'));
     }
   });
 
@@ -654,6 +732,7 @@
   B.on('hotkey', function(data) {
     if (data.key === 'n') advance();
     else if (data.key === 'r') reset();
+    else if (data.key === 'f') { fastMode = !fastMode; console.log('[ChatApp] Fast mode ' + (fastMode ? 'ON' : 'OFF')); }
   });
 
   // ── Initialize ──
@@ -669,13 +748,24 @@
     subtitleEl.textContent = config.projectSubtitle;
   }
 
-  // Create the first chat
+  // Create all non-spawnOnly chats at startup
   if (config.chats && config.chats.length > 0) {
-    var firstChat = config.chats[0];
-    appState.nextChatIndex = 1;
-    createChatCard(firstChat.id);
-    appState.activeChatId = firstChat.id;
+    var startupChats = config.chats.filter(function(c) { return !c.spawnOnly; });
+
+    startupChats.forEach(function(chatDef) {
+      createChatCard(chatDef.id);
+    });
+    appState.nextChatIndex = startupChats.length;
+    appState.activeChatId = startupChats[0].id;
     applyLayout();
+
+    // Auto-play opener segment for each chat:
+    // First chat gets animated typing; others are instant (silent populate)
+    (async function() {
+      for (var i = 0; i < startupChats.length; i++) {
+        await autoPlayOpener(startupChats[i].id, i === 0);
+      }
+    })();
   }
 
   // Expose for debugging
