@@ -35,7 +35,7 @@ window.ChatConfig = {
       name: 'Patient screening webapp',
       dotColor: 'orange',
       preview: '',
-      segments: [15, 11],
+      segments: [11, 12],
       previews: {
         0: '— planning webapp',
         1: '— webapp deployed'
@@ -46,12 +46,11 @@ window.ChatConfig = {
       name: 'Slack agent deployment',
       dotColor: 'green',
       preview: '',
-      segments: [16, 12, 19, 20],
+      segments: [13, 14, 15],
       previews: {
         0: '— planning agent',
         1: '— live in #trial-enrollment',
-        2: '— governance review needed',
-        3: '— governance kicked off'
+        2: '— governance kicked off'
       }
     },
     {
@@ -60,7 +59,7 @@ window.ChatConfig = {
       dotColor: 'blue',
       preview: '',
       spawnOnly: true,
-      segments: [17, 18, 21],
+      segments: [16, 17, 18],
       previews: {
         0: '— compliance check pending',
         1: '— governance passed',
@@ -333,7 +332,21 @@ window.ChatConfig = {
       ]
     },
 
-    // ── Segment 11: Webapp request ──
+    // ── chat-2 ───────────────────────────────────────────────
+
+    // ── Segment 11: Webapp thread opener (assistant-first) ──
+    {
+      type: 'narrate',
+      messages: [
+        {
+          role: 'assistant',
+          text: 'I\'ll build a patient screening webapp for your clinical screeners. They\'ll be able to enter a patient ID and see enrollment likelihood, key demographics, lab values, and risk factors — all backed by the scored dataset.',
+          followUp: 'Want me to go ahead?'
+        }
+      ]
+    },
+
+    // ── Segment 12: Webapp build ──
     {
       type: 'plan-approve-build',
       messages: [
@@ -367,7 +380,21 @@ window.ChatConfig = {
       }
     },
 
-    // ── Segment 12: Slack agent ──
+    // ── chat-3 ───────────────────────────────────────────────
+
+    // ── Segment 13: Slack agent thread opener (assistant-first) ──
+    {
+      type: 'narrate',
+      messages: [
+        {
+          role: 'assistant',
+          text: 'I\'ll create a conversational agent backed by your scored patient data and pipeline metadata, then deploy it to Slack so your coordinators can check enrollment status in real time.',
+          followUp: 'Ready to set this up?'
+        }
+      ]
+    },
+
+    // ── Segment 14: Slack agent build ──
     {
       type: 'plan-approve-build',
       messages: [
@@ -407,62 +434,22 @@ window.ChatConfig = {
       }
     },
 
-    // ── Segment 13: (unused placeholder) ──
-    null,
-
-    // ── Segment 14: (unused placeholder) ──
-    null,
-
-    // ── Segment 15: Webapp thread opener (assistant-first) ──
-    {
-      type: 'narrate',
-      messages: [
-        {
-          role: 'assistant',
-          text: 'I\'ll build a patient screening webapp for your clinical screeners. They\'ll be able to enter a patient ID and see enrollment likelihood, key demographics, lab values, and risk factors — all backed by the scored dataset.',
-          followUp: 'Want me to go ahead?'
-        }
-      ]
-    },
-
-    // ── Segment 16: Slack agent thread opener (assistant-first) ──
-    {
-      type: 'narrate',
-      messages: [
-        {
-          role: 'assistant',
-          text: 'I\'ll create a conversational agent backed by your scored patient data and pipeline metadata, then deploy it to Slack so your coordinators can check enrollment status in real time.',
-          followUp: 'Ready to set this up?'
-        }
-      ]
-    },
-
-    // ── Segment 19: Governance confirm (end of chat-3) ──
-    {
-      type: 'narrate',
-      messages: [
-        {
-          role: 'assistant',
-          text: 'I\'ll set up a dedicated governance review thread — it\'ll run the compliance checks in parallel while everything stays live.',
-          followUp: 'Ready to kick it off?'
-        }
-      ]
-    },
-
-    // ── Segment 20: Confirm and spawn governance tab ──
+    // ── Segment 15: Confirm and spawn governance tab ──
     {
       type: 'question-answer',
       messages: [
-        { role: 'user', text: 'Yeah, let\'s do it.' },
+        { role: 'user', text: 'Yeah, kick it off.' },
         {
           role: 'assistant',
-          text: 'Starting the governance review thread now.',
+          text: 'Starting a dedicated governance review thread now — it\'ll run the compliance checks in parallel while everything stays live.',
           action: { type: 'spawnChat', chatId: 'chat-4' }
         }
       ]
     },
 
-    // ── Segment 17: Governance nudge ──
+    // ── chat-4 ───────────────────────────────────────────────
+
+    // ── Segment 16: Governance nudge ──
     {
       type: 'narrate',
       messages: [
@@ -474,7 +461,7 @@ window.ChatConfig = {
       ]
     },
 
-    // ── Segment 18: Governance checks ──
+    // ── Segment 17: Governance checks ──
     {
       type: 'question-answer',
       messages: [
@@ -490,7 +477,7 @@ window.ChatConfig = {
             { label: 'Stakeholder Sign-off', status: 'pass', note: 'Auto-approved: threshold model, trial-enrollment classification', badge: 'Pass' },
             { label: 'Model Documentation', status: 'pass', note: 'Model card and flow summary attached to version record', badge: 'Pass' }
           ],
-          followUp: '6 checks passed. The model and agent are cleared for production. Ready to go live?',
+          followUp: '6 checks passed. The model and agent are cleared for production.',
           tasks: [
             { title: 'Govern: Predict enrollment_success v1', description: '[View governance record in Dataiku Govern →](https://jed.se-platform.dataiku-sandbox.io/govern/)' }
           ]
@@ -498,7 +485,7 @@ window.ChatConfig = {
       ]
     },
 
-    // ── Segment 21: Go live approval ──
+    // ── Segment 18: Go live approval ──
     {
       type: 'plan-approve-build',
       messages: [],
