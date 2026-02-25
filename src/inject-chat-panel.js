@@ -319,7 +319,7 @@
                     setTimeout(function() {
                       var svg = document.querySelector('.right-pane svg');
                       if (svg && svg.firstElementChild) {
-                        svg.firstElementChild.setAttribute('transform', 'translate(290, 180) scale(1.03)');
+                        svg.firstElementChild.setAttribute('transform', 'translate(207, 147) scale(0.836)');
                       }
                       console.log('[ChatPanel] Agent pan applied');
                     }, 400);

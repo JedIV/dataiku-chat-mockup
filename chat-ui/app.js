@@ -35,6 +35,38 @@
     return new Promise(function(r) { setTimeout(r, fastMode ? 0 : ms); });
   }
 
+  // ── Type user message into the input field, then send as bubble ──
+  async function typeAndSendUser(chatId, text, messagesEl) {
+    var chatCard = messagesEl.closest('.chat-card');
+    var input = chatCard ? chatCard.querySelector('.chat-input') : null;
+    var sendBtn = chatCard ? chatCard.querySelector('.chat-send-btn') : null;
+
+    if (input && !fastMode) {
+      input.value = '';
+      input.style.height = 'auto';
+      var chars = text.split('');
+      for (var i = 0; i < chars.length; i++) {
+        input.value += chars[i];
+        if (i === 0 && sendBtn) sendBtn.classList.add('active');
+        // Auto-resize textarea
+        input.style.height = 'auto';
+        input.style.height = input.scrollHeight + 'px';
+        await new Promise(function(r) { setTimeout(r, 35 + Math.floor(Math.random() * 25)); });
+      }
+      await sleep(300);
+      // Flash send button
+      if (sendBtn) sendBtn.classList.add('sending');
+      await sleep(150);
+      input.value = '';
+      input.style.height = 'auto';
+      if (sendBtn) { sendBtn.classList.remove('sending'); sendBtn.classList.remove('active'); }
+    }
+
+    // Add the bubble instantly (text already "sent")
+    var userEl = C.userMessage(text, { typing: false });
+    append(messagesEl, userEl);
+  }
+
   // ── Agent ready signal (resolved when parent signals .left-pane rendered) ──
   var agentReadyResolve = null;
   var agentReadyPromise = new Promise(function(r) { agentReadyResolve = r; });
@@ -204,9 +236,7 @@
     var msg = seg.messages[chatState.messageIndex];
 
     if (msg.role === 'user') {
-      var userEl = C.userMessage(msg.text, { typing: !fastMode, typingDelay: 45 });
-      append(messagesEl, userEl);
-      if (userEl._typePromise) await userEl._typePromise;
+      await typeAndSendUser(chatId, msg.text, messagesEl);
       if (msg.action) executeAction(msg.action);
       chatState.messageIndex++;
       await sleep(200);
@@ -240,9 +270,7 @@
       if (chatState.messageIndex < seg.messages.length) {
         var msg = seg.messages[chatState.messageIndex];
         if (msg.role === 'user') {
-          var userEl = C.userMessage(msg.text, { typing: !fastMode, typingDelay: 45 });
-          append(messagesEl, userEl);
-          if (userEl._typePromise) await userEl._typePromise;
+          await typeAndSendUser(chatId, msg.text, messagesEl);
           if (msg.action) executeAction(msg.action);
         }
         chatState.messageIndex++;
@@ -592,7 +620,7 @@
     inputArea.className = 'chat-input-area';
     inputArea.innerHTML =
       '<div class="chat-input-row">' +
-        '<input class="chat-input" placeholder="Describe what you\'d like to build..." disabled>' +
+        '<textarea class="chat-input" placeholder="Describe what you\'d like to build..." rows="1" disabled></textarea>' +
         '<button class="chat-send-btn">&#8593;</button>' +
       '</div>';
     card.appendChild(inputArea);

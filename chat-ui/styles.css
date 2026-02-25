@@ -325,7 +325,7 @@ html, body {
 
 .chat-input-row {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   gap: 8px;
 }
 
@@ -340,6 +340,11 @@ html, body {
   background: var(--gray-100);
   outline: none;
   transition: border 0.15s;
+  resize: none;
+  overflow: hidden;
+  min-height: 38px;
+  max-height: 120px;
+  line-height: 1.4;
 }
 
 .chat-input::placeholder { color: var(--gray-400); }
@@ -363,6 +368,8 @@ html, body {
 }
 
 .chat-send-btn:hover { background: var(--accent-hover); }
+.chat-send-btn.active { opacity: 1; }
+.chat-send-btn.sending { opacity: 1; transform: scale(0.9); }
 
 /* ── Message blocks ── */
 
