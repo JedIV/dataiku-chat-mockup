@@ -60,10 +60,11 @@ window.ChatConfig = {
       dotColor: 'blue',
       preview: '',
       spawnOnly: true,
-      segments: [17, 18],
+      segments: [17, 18, 21],
       previews: {
         0: '— compliance check pending',
-        1: '— governance passed'
+        1: '— governance passed',
+        2: '— agent is live'
       }
     }
   ],
@@ -351,10 +352,10 @@ window.ChatConfig = {
           { icon: '⟳', text: 'Connecting to patient_all_data_joined_sf_scored...', color: '#888' },
           { icon: '✓', text: 'Dataset API connected — 12,400 records available', color: '#3EDAB2' },
           { icon: '⟳', text: 'Building patient lookup interface...', color: '#888' },
-          { icon: '⟳', text: 'Compiling frontend assets...', color: '#888', delay: 30000 },
-          { icon: '✗', text: 'Error 137: build container OOM — retrying with 4 GB heap...', color: '#DC2626' },
-          { icon: '⟳', text: 'Recompiling with increased memory...', color: '#888' },
-          { icon: '✓', text: 'Assets compiled successfully', color: '#3EDAB2' },
+          { icon: '⟳', text: 'Rendering enrollment prediction chart...', color: '#888', delay: 30000 },
+          { icon: '✗', text: 'TypeError: cannot read proba_1 of undefined — patient record missing scored column', color: '#DC2626' },
+          { icon: '⟳', text: 'Adding null check for unscored patients, retrying...', color: '#888' },
+          { icon: '✓', text: 'All views rendering correctly', color: '#3EDAB2' },
           { icon: '⟳', text: 'Configuring access controls...', color: '#888' },
           { icon: '✓', text: 'Webapp deployed: Patient Screening App', color: '#3EDAB2' }
         ],
@@ -383,56 +384,34 @@ window.ChatConfig = {
       build: {
         statusLines: [
           { icon: '⟳', text: 'Spinning up agent scaffold...', color: '#888', waitForAgent: true },
-          { icon: '⟳', text: 'Pulling in patient_all_data_joined_sf_scored as the knowledge base...', color: '#888' },
-          { icon: '✓', text: 'Agent core is ready', color: '#3EDAB2' },
+          { icon: '✓', text: 'Agent system prompt generated', color: '#3EDAB2' },
+          { icon: '⟳', text: 'Connecting to patient_all_data_joined_sf_scored with the Dataset Lookup tool...', color: '#888' },
           { icon: '✓', text: 'Dataset Lookup tool attached', color: '#3EDAB2', action: { type: 'revealAgentStep', step: 'datasetLookup' } },
-          { icon: '⚠', text: 'Site Assignment API returned 403 — retrying with service account...', color: '#EDAB4F' },
-          { icon: '✓', text: 'Got it — Site Assignment connected', color: '#3EDAB2', action: { type: 'revealAgentStep', step: 'siteAssignment' } },
-          { icon: '✓', text: 'Site Information connected', color: '#3EDAB2', action: { type: 'revealAgentStep', step: 'siteInfo' } },
-          { icon: '⟳', text: 'Authenticating with your Slack workspace...', color: '#888' },
-          { icon: '✓', text: 'Slack handshake complete', color: '#3EDAB2' },
+          { icon: '⟳', text: 'Creating Site Assignment Jira tool', color: '#EDAB4F' },
+          { icon: '✓', text: 'Got it — Site Assignment Jira tool created', color: '#3EDAB2', action: { type: 'revealAgentStep', step: 'siteAssignment' } },
+          { icon: '⟳', text: 'Creating Site Information SQL lookup tool', color: '#EDAB4F' },
+          { icon: '✓', text: 'Site Information tool created', color: '#3EDAB2', action: { type: 'revealAgentStep', step: 'siteInfo' } },
+          { icon: '⟳', text: 'Searching for existing Slack agent configuration webapp', color: '#888' },
+          { icon: '✓', text: 'Webapp identified', color: '#3EDAB2' },
           { icon: '⟳', text: 'Configuring permissions for #trial-enrollment...', color: '#888' },
-          { icon: '✓', text: 'Agent is live in #trial-enrollment', color: '#3EDAB2' },
-          { icon: '⟳', text: 'Drafting intro message for @marcus.chen...', color: '#888' },
+          { icon: '✓', text: 'Agent is staged in #trial-enrollment', color: '#3EDAB2' },
+          { icon: '⟳', text: 'Drafting test message for @marcus.chen...', color: '#888' },
           { icon: '✓', text: 'Sent — Marcus just got pinged', color: '#3EDAB2' }
         ],
         flowSteps: ['agent'],
-        completionText: 'Done. The Enrollment Status agent is live in Slack. It just introduced itself to Marcus — he can ask it about patient scores, enrollment predictions, or pipeline status anytime.',
+        completionText: 'Done. The Enrollment Status agent is connected to Slack. Right now it\'s just a test connection - waiting on Governance checks to pass prior to go live.',
         tasks: [
           { title: 'Slack Message to Marcus', description: '**@Enrollment Status Agent**: Hi Marcus — I\'m the new enrollment status agent for the Patient Cohort trial. I can answer questions about patient scores, eligibility predictions, and recruitment progress across all 22 sites. Just ask me anything here or in #trial-enrollment.' }
         ],
-        followUp: 'The system you built in twenty minutes is now live in Slack — reaching coordinators across twenty-two sites, answering questions in real time, on enterprise data. One thing before we\'re fully done: the model and agent need a compliance review in **Dataiku Govern**. Want me to kick that off?'
+        followUp: 'Agent development complete. One thing before we\'re fully done: the model and agent need a compliance review in **Dataiku Govern**. Want me to kick that off?'
       }
     },
 
-    // ── Segment 13: Spawn threads request ──
-    {
-      type: 'question-answer',
-      messages: [
-        { role: 'user', text: 'Now create two new threads — in one, build me a patient screening webapp that clinical screeners can use in the field. In the other, deploy a Slack agent for enrollment status.' },
-        {
-          role: 'assistant',
-          text: 'I\'ll set up both threads:',
-          tasks: [
-            { title: 'Thread: Patient Screening Webapp', description: 'A field-ready app where screeners enter a patient ID and see enrollment likelihood, key demographics, lab values, and risk factors — backed by the scored dataset.' },
-            { title: 'Thread: Slack Agent Deployment', description: 'A conversational agent backed by your scored data and pipeline metadata, deployed to Slack so coordinators can check enrollment status in real time.' }
-          ],
-          followUp: 'Shall I create these threads?'
-        }
-      ]
-    },
+    // ── Segment 13: (unused placeholder) ──
+    null,
 
-    // ── Segment 14: Confirm and spawn ──
-    {
-      type: 'narrate',
-      messages: [
-        { role: 'user', text: 'Do it.' },
-        {
-          role: 'assistant',
-          text: 'Done — I\'ve created both threads. You can switch between them anytime.'
-        }
-      ]
-    },
+    // ── Segment 14: (unused placeholder) ──
+    null,
 
     // ── Segment 15: Webapp thread opener (assistant-first) ──
     {
@@ -506,17 +485,37 @@ window.ChatConfig = {
           checklist: [
             { label: 'Model Performance', status: 'pass', note: 'Random Forest — 87% accuracy (threshold: 80%)', badge: 'Pass' },
             { label: 'Bias & Fairness', status: 'pass', note: 'No disparate impact detected across age, gender, or ethnicity groups', badge: 'Pass' },
-            { label: 'Data Lineage', status: 'pass', note: 'Full lineage documented: 3 source datasets → pipeline → model', badge: 'Pass' },
-            { label: 'PII / HIPAA Compliance', status: 'warn', note: 'Patient IDs present — anonymization layer confirmed active', badge: 'Warning' },
+            { label: 'Data Lineage', status: 'pass', note: 'Full lineage documented: 4 source datasets → pipeline → model', badge: 'Pass' },
+            { label: 'PII / HIPAA Compliance', status: 'pass', note: 'Patient names present in clinical notes. Ensuring PII Detection guardrail is in place on LLM connection', badge: 'Pass' },
             { label: 'Stakeholder Sign-off', status: 'pass', note: 'Auto-approved: threshold model, trial-enrollment classification', badge: 'Pass' },
-            { label: 'Model Documentation', status: 'pass', note: 'Model card and pipeline summary attached to version record', badge: 'Pass' }
+            { label: 'Model Documentation', status: 'pass', note: 'Model card and flow summary attached to version record', badge: 'Pass' }
           ],
-          followUp: '5 checks passed, 1 warning. The model is cleared for deployment.',
+          followUp: '6 checks passed. The model and agent are cleared for production. Ready to go live?',
           tasks: [
             { title: 'Govern: Predict enrollment_success v1', description: '[View governance record in Dataiku Govern →](https://jed.se-platform.dataiku-sandbox.io/govern/)' }
           ]
         }
       ]
+    },
+
+    // ── Segment 21: Go live approval ──
+    {
+      type: 'plan-approve-build',
+      messages: [],
+      plan: {
+        intro: 'Here\'s what goes live:',
+        steps: [
+          { label: 'Activate Slack Agent', detail: 'Switch Enrollment Status Agent from test to live in #trial-enrollment' }
+        ]
+      },
+      build: {
+        statusLines: [
+          { icon: '⟳', text: 'Switching Slack agent from test to live...', color: '#888' },
+          { icon: '✓', text: 'Agent is live in #trial-enrollment', color: '#3EDAB2' }
+        ],
+        flowSteps: [],
+        completionText: 'The Slack agent is live and available to Regional Trial Coordinators at 22 sites.'
+      }
     }
   ],
 

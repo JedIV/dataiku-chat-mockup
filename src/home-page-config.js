@@ -76,7 +76,7 @@ window.homePageChatConfig = {
             { label: 'sites', value: 22, unit: '22' }
           ]
         },
-        footer: 'They cover demographics, lab panels, and clinical history — everything we need. Want me to build on top of these?'
+        footer: 'They cover demographics, lab panels, clinical history, and site locations with enrollment status data — everything we need. Want me to build on top of these?'
       }
     },
 
