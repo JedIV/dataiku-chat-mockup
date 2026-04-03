@@ -1,39 +1,70 @@
 # Dataiku Chat Mockup
 
-A lightweight tool to inject mock AI chat assistants into Dataiku for demos and presentations. This is purely visual — it doesn't actually connect to any AI backend.
+Mock AI chat interfaces injected into Dataiku DSS for demos. Purely visual — no AI backend. Vanilla JavaScript, zero dependencies, no build step.
 
-## Scripts
+## Setup
 
-### Flow Assistant Fake Chat (Recommended)
+### Prerequisites
 
-Interactive fake conversation system for the Flow Assistant panel. Supports hotkey-driven playback for recording demo videos.
+- Access to the [staging Dataiku instance](https://staging-design.qa.managedinstances.dkucloud-dev.com)
+- Node.js installed locally
+- Chrome browser
 
-**Usage:**
-1. Open Dataiku Flow page and open the Flow Assistant panel
-2. Open DevTools (F12 or Cmd+Option+I) → Console
-3. Paste `src/flow-assistant-config.js` (optional, for custom conversations)
-4. Paste `src/flow-assistant-fake-chat.js`
+### Step 1: Start the Chat UI
 
-**Hotkeys:**
-- `Ctrl+Shift+N` - Advance to next scripted message
-- `Ctrl+Shift+T` - Toggle fake/real mode
-- `Ctrl+Shift+R` - Reset conversation
+The chat panel requires a local dev server running:
 
-**Customizing conversations:**
+```bash
+cd chat-ui
+node serve.js
+```
 
-Edit `src/flow-assistant-config.js`:
+This serves the chat UI at `http://localhost:3333`.
+
+### Step 2: Flow Demo
+
+1. Open the **PATIENTCOHORT** project flow in Chrome:
+   `https://staging-design.qa.managedinstances.dkucloud-dev.com/projects/PATIENTCOHORT/flow/`
+2. Make sure you're in the **default flow zone**
+3. Open DevTools Console (`Cmd+Option+I` / `F12`)
+4. Paste the contents of `src/inject-chat-panel.js`
+
+This creates a 50/50 split — Dataiku flow on the left, chat UI on the right — with a postMessage bridge for navigation actions and progressive flow reveal.
+
+### Step 3: Home Page / Task Hub Demo
+
+In a **separate browser tab**:
+
+1. Navigate to the AI Search page:
+   `https://staging-design.qa.managedinstances.dkucloud-dev.com/home/data-catalog/ai-search`
+2. Open DevTools Console
+3. Paste the scripts **in this order**:
+   1. `src/home-page-config.js` — conversation configuration
+   2. `src/home-page-fake-chat.js` — interactive fake chat
+   3. `src/task-hub-modifications.js` — reskins the page to the 2026 brand aesthetic
+
+## Hotkeys
+
+All interactive scripts share the same hotkeys:
+
+| Hotkey | Action |
+|---|---|
+| `Ctrl+Shift+N` | Advance to next scripted message |
+| `Ctrl+Shift+T` | Toggle fake/real mode |
+| `Ctrl+Shift+R` | Reset conversation |
+
+## Customizing Conversations
+
+Edit `src/home-page-config.js` or `src/flow-assistant-config.js`:
 
 ```javascript
 window.fakeChatConfig = {
   conversation: [
-    {
-      role: 'user',
-      text: 'Your question here'
-    },
+    { role: 'user', text: 'Your question here' },
     {
       role: 'assistant',
       content: {
-        intro: 'Explanation text with <em>emphasis</em>',
+        intro: 'Response text with <em>emphasis</em>',
         tasks: [
           {
             title: 'Task Name',
@@ -46,64 +77,53 @@ window.fakeChatConfig = {
       }
     }
   ],
-  typingSpeed: 30,        // ms per character
-  aiResponseDelay: 800    // ms before AI responds
+  typingSpeed: 30,
+  aiResponseDelay: 800
 };
 ```
 
-Use `<span style="color:#28a9dd">name</span>` to highlight dataset/column names.
+## Other Injection Scripts
 
-### Right Panel Chat Widget
-
-Injects a mock chat widget into Dataiku's right panel (when an object is selected).
-
-**Usage:**
-1. Navigate to Flow view and select an object
-2. Paste `src/inject.js` into console
-
-### Flow Conversation Injection
-
-Static conversation injection for the "Generate Flow" panel.
-
-**Usage:**
-1. Navigate to Flow page with Generate Flow panel open
-2. Paste `src/flow-conversation-injection.js` into console
+| Script | What it does | Where to use it |
+|---|---|---|
+| `src/flow-assistant-fake-chat.js` | Fake chat in the Flow Assistant panel | Flow page with Flow Assistant open |
+| `src/flow-assistant-config.js` | Config for flow assistant conversations | Load before the script above |
+| `src/inject.js` | Accordion chat widget in right panel | Flow page with an object selected |
+| `src/flow-conversation-injection.js` | Static conversation in "Generate Flow" panel | Flow page with Generate Flow open |
 
 ## Project Structure
 
 ```
 dataiku-chat-mockup/
-├── README.md
-├── src/
-│   ├── flow-assistant-config.js      # Conversation config (edit this)
-│   ├── flow-assistant-fake-chat.js   # Interactive fake chat script
-│   ├── flow-conversation-injection.js # Static conversation injection
-│   └── inject.js                      # Right panel widget
-├── dist/
-│   └── bookmarklet.txt
-├── extension/
-│   ├── manifest.json
-│   ├── background.js
-│   └── content.js
-└── screenshots/
+├── src/                          # Injection scripts (paste into console)
+│   ├── inject-chat-panel.js      # Flow demo: 50/50 split with chat iframe
+│   ├── home-page-fake-chat.js    # Home page demo: interactive fake chat
+│   ├── home-page-config.js       # Home page demo: conversation config
+│   ├── task-hub-modifications.js # Home page demo: 2026 brand reskin
+│   ├── flow-assistant-fake-chat.js
+│   ├── flow-assistant-config.js
+│   ├── inject.js
+│   ├── flow-conversation-injection.js
+│   └── inject-title.js
+├── chat-ui/                      # Standalone chat UI (iframe for inject-chat-panel)
+│   ├── index.html
+│   ├── app.js, components.js, config.js
+│   ├── styles.css
+│   └── serve.js                  # Dev server (localhost:3333)
+├── webapp/                       # Standalone patient cohort webapp
+├── webapps/patient-lookup/       # Dataiku webapp plugin
+├── data/                         # Sample datasets and generator script
+├── dist/bookmarklet.txt          # Minified bookmarklet (right panel widget)
+└── extension/                    # Chrome extension (right panel widget)
 ```
-
-## Features
-
-- **Matches Dataiku's UI**: Uses native fonts, colors, and styling
-- **Interactive**: Hotkey-driven playback for video recording
-- **Typing animation**: User messages type out character by character
-- **Typing indicator**: Shows animated dots while AI "thinks"
-- **Mode toggle**: Switch between fake and real mode
-- **Auto-reset**: Clears fake messages when clicking "New Task"
 
 ## Tips for Demos
 
-1. **Prepare your conversation**: Edit the config file with your demo scenario
-2. **Match the context**: Use actual dataset/column names from your project
-3. **Practice timing**: Run through the hotkey sequence before recording
-4. **Multiple scenarios**: Create different config files for different demos
+1. **Prepare your conversation** — edit the config file with your demo scenario
+2. **Match the context** — use actual dataset/column names from your project
+3. **Practice timing** — run through the hotkey sequence before recording
+4. **Multiple scenarios** — create different config files for different demos
 
 ## License
 
-MIT — use freely for demos and presentations.
+MIT
